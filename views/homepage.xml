@@ -1,79 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ============================================================
-         Homepage Template — Warung Lakku Default
-         Provides a ready-to-use homepage layout that can be
-         customized via the Website Editor after installation.
+         Homepage Template — Warung Lakku
+         Layout inspired by bkdelivery.co.id:
+         1. Header (navbar)
+         2. Hero Slider/Banner
+         3. Product Category Grid (3 columns) — langsung ke menu!
+         4. WhatsApp Float Button
          ============================================================ -->
 
     <template id="homepage_warunglakku" name="Warung Lakku Homepage" page="True" priority="29">
         <t t-call="website.layout">
             <div id="wrap" class="oe_structure oe_empty">
-                <!-- Hero Section -->
-                <section class="s_warunglakku_hero o_cc5 py-5">
-                    <div class="container">
-                        <div class="row align-items-center min-vh-75 py-5">
-                            <div class="col-lg-6 text-white">
-                                <h1 class="display-3 fw-bold">Rasa Autentik</h1>
-                                <p class="lead mb-4">Harga Bersahabat — Nikmati hidangan khas Indonesia dengan cita rasa otentik dan harga terjangkau.</p>
-                                <a href="/shop" class="btn btn-light btn-lg rounded-pill px-4 shadow-lg">Pesan Sekarang</a>
-                            </div>
-                            <div class="col-lg-6 text-center mt-4 mt-lg-0">
-                                <img src="/theme_warunglakku/static/img/icon.svg" alt="Warung Lakku" class="img-fluid rounded-circle shadow-lg" style="max-width: 350px;"/>
-                            </div>
+
+                <!-- ====================================================
+                     HERO BANNER — Full-width gradient banner
+                     Simple, impactful, no excessive text
+                     ==================================================== -->
+                <section class="wl-hero-banner" data-snippet="wl_hero_banner">
+                    <div class="wl-hero-inner">
+                        <div class="wl-hero-content">
+                            <h1 class="wl-hero-title" contenteditable="true">Warung Lakku</h1>
+                            <p class="wl-hero-subtitle" contenteditable="true">Rasa Autentik, Harga Bersahabat</p>
+                            <a href="/shop" class="wl-hero-cta" contenteditable="true">Pesan Sekarang</a>
                         </div>
                     </div>
                 </section>
 
-                <!-- Feature Cards -->
-                <section class="py-5" style="background-color: #FFFDF7;">
+                <!-- ====================================================
+                     MEMBER / PROMO BAR — Singkat seperti BK Crown
+                     ==================================================== -->
+                <section class="wl-promo-bar" data-snippet="wl_promo_bar">
                     <div class="container">
-                        <div class="row text-center mb-5">
-                            <div class="col-12">
-                                <h2 class="fw-bold" style="color: #2D2D2D;">Kenapa Warung Lakku?</h2>
-                                <p class="text-muted">Alasan kenapa pelanggan kami selalu kembali</p>
+                        <div class="wl-promo-inner">
+                            <div class="wl-promo-text">
+                                <span class="wl-promo-icon">🔥</span>
+                                <h3 contenteditable="true">Pesan via WhatsApp dan dapatkan promo spesial!</h3>
                             </div>
-                        </div>
-                        <div class="row g-4">
-                            <div class="col-lg-4 col-md-6">
-                                <div class="text-center p-4 bg-white rounded-4 shadow-sm border h-100" style="border-color: #f0f0f0 !important; transition: all 0.3s ease;">
-                                    <div class="mb-3">
-                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width:70px;height:70px;background:linear-gradient(135deg,#FFC107,#FF8F00);font-size:28px;">🔥</span>
-                                    </div>
-                                    <h5 class="fw-bold">Rasa Autentik</h5>
-                                    <p class="text-muted">Resep turun-temurun dengan bumbu pilihan yang menggugah selera</p>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 col-md-6">
-                                <div class="text-center p-4 bg-white rounded-4 shadow-sm border h-100" style="border-color: #f0f0f0 !important; transition: all 0.3s ease;">
-                                    <div class="mb-3">
-                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width:70px;height:70px;background:linear-gradient(135deg,#FF8F00,#FF5722);font-size:28px;">💰</span>
-                                    </div>
-                                    <h5 class="fw-bold">Harga Bersahabat</h5>
-                                    <p class="text-muted">Nikmati hidangan lezat tanpa harus menguras kantong</p>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 col-md-6">
-                                <div class="text-center p-4 bg-white rounded-4 shadow-sm border h-100" style="border-color: #f0f0f0 !important; transition: all 0.3s ease;">
-                                    <div class="mb-3">
-                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width:70px;height:70px;background:linear-gradient(135deg,#FF5722,#E91E63);font-size:28px;">⚡</span>
-                                    </div>
-                                    <h5 class="fw-bold">Cepat &amp; Hangat</h5>
-                                    <p class="text-muted">Dihidangkan langsung dari dapur ke meja Anda dengan cepat</p>
-                                </div>
-                            </div>
+                            <a href="https://wa.me/6285854749767" target="_blank" class="wl-promo-btn" contenteditable="true">Chat WhatsApp</a>
                         </div>
                     </div>
                 </section>
 
-                <!-- CTA Section -->
-                <section class="s_warunglakku_cta o_cc5 py-5">
-                    <div class="container text-center text-white">
-                        <h2 class="fw-bold mb-3">Pesan Sekarang via WhatsApp!</h2>
-                        <p class="lead mb-4">Klik tombol di bawah untuk langsung order tanpa ribet</p>
-                        <a href="https://wa.me/6285854749767" target="_blank" class="btn btn-light btn-lg rounded-pill px-5 shadow-lg fw-bold" style="color: #FF8F00;">Chat WhatsApp</a>
+                <!-- ====================================================
+                     MENU KATEGORI — Grid 3 kolom seperti BK "Our Menus"
+                     Langsung tunjukkan kategori produk, gak bertele-tele
+                     ==================================================== -->
+                <section class="wl-menu-section" data-snippet="wl_menu_section">
+                    <div class="container">
+                        <h2 class="wl-menu-title" contenteditable="true">Menu Kami</h2>
+                        <div class="wl-menu-grid">
+
+                            <!-- Menu Item 1 -->
+                            <a href="/shop" class="wl-menu-card">
+                                <div class="wl-menu-img-wrapper">
+                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Menu Lengkap" class="wl-menu-img"/>
+                                </div>
+                                <h3 class="wl-menu-name" contenteditable="true">Menu Lengkap</h3>
+                            </a>
+
+                            <!-- Menu Item 2 -->
+                            <a href="/shop" class="wl-menu-card">
+                                <div class="wl-menu-img-wrapper">
+                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Paket Hemat" class="wl-menu-img"/>
+                                </div>
+                                <h3 class="wl-menu-name" contenteditable="true">Paket Hemat</h3>
+                            </a>
+
+                            <!-- Menu Item 3 -->
+                            <a href="/shop" class="wl-menu-card">
+                                <div class="wl-menu-img-wrapper">
+                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Promo Hari Ini" class="wl-menu-img"/>
+                                </div>
+                                <h3 class="wl-menu-name" contenteditable="true">Promo Hari Ini</h3>
+                            </a>
+
+                            <!-- Menu Item 4 -->
+                            <a href="/shop" class="wl-menu-card">
+                                <div class="wl-menu-img-wrapper">
+                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Minuman" class="wl-menu-img"/>
+                                </div>
+                                <h3 class="wl-menu-name" contenteditable="true">Minuman</h3>
+                            </a>
+
+                            <!-- Menu Item 5 -->
+                            <a href="/shop" class="wl-menu-card">
+                                <div class="wl-menu-img-wrapper">
+                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Snack &amp; Side" class="wl-menu-img"/>
+                                </div>
+                                <h3 class="wl-menu-name" contenteditable="true">Snack &amp; Side</h3>
+                            </a>
+
+                            <!-- Menu Item 6 -->
+                            <a href="/shop" class="wl-menu-card">
+                                <div class="wl-menu-img-wrapper">
+                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Catering &amp; Pesan Besar" class="wl-menu-img"/>
+                                </div>
+                                <h3 class="wl-menu-name" contenteditable="true">Catering &amp; Pesan Besar</h3>
+                            </a>
+
+                        </div>
                     </div>
                 </section>
+
             </div>
 
             <!-- WhatsApp Float Button -->

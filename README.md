@@ -18,26 +18,26 @@
 
 ## Warung Lakku Theme for Odoo 17
 
-A warm & vibrant **Odoo 17 website theme** inspired by Indonesian warung culture. Features bold gradients (Yellow -> Amber -> Orange), Poppins + Inter typography, rounded pill buttons with glow shadows, and a WhatsApp floating button.
+A warm & vibrant **Odoo 17 website theme** inspired by Indonesian warung culture. Clean, product-focused landing page layout inspired by [bkdelivery.co.id](https://bkdelivery.co.id/) — hero banner, promo bar, then straight to the menu grid. No fluff, just food.
 
-Adapted from the BK Delivery design system, reimagined with Warung Lakku branding.
+Features bold gradients (Yellow -> Amber -> Orange), Poppins + Inter typography, rounded pill buttons with glow shadows, and a WhatsApp floating button.
 
 ---
 
 ## Features
 
+- **BK-Style Landing Page** — Hero banner -> Promo bar -> Menu grid. Clean and direct like bkdelivery.co.id
 - **Brand Gradient** — `#FFC107` -> `#FF8F00` -> `#FF5722` hero, buttons, badges
 - **Google Fonts** — Poppins (headings) + Inter (body)
+- **3-Column Menu Grid** — Category cards with hover animations (like BK "Our Menus")
 - **Rounded Pill Buttons** — With glow shadow on hover
-- **Feature Cards** — Hover animations with scale & shadow transitions
-- **Gradient Menu Circles** — Colorful icon circles for menu items
 - **Product Card Styling** — Rounded corners, hover lift, amber price text
 - **WhatsApp Floating Button** — Fixed bottom-right with pulse animation
+- **Promo Bar** — Quick CTA strip below hero (like BK Crown section)
 - **Scroll Reveal Animations** — IntersectionObserver-based fade-in
 - **Custom Scrollbar** — Brand-colored scrollbar thumb
 - **Gradient Footer Border** — Brand gradient top-border on footer
-- **Ready-to-use Snippets** — Hero, Features, CTA, and WA button snippets
-- **Default Homepage** — Complete homepage layout out of the box
+- **Default Homepage** — Ready to use, just replace images
 
 ---
 
@@ -138,9 +138,9 @@ After installation, these snippets appear in the Website Editor:
 
 | Snippet | Description |
 |---|---|
-| **Gradient Hero** | Full-width hero with brand gradient background |
-| **Feature Cards** | 3-column feature cards with gradient icon circles |
-| **Gradient CTA** | Call-to-action section with WhatsApp link |
+| **Hero Banner** | Full-width gradient hero with title, subtitle, and CTA |
+| **Promo Bar** | Horizontal promo strip with WhatsApp CTA |
+| **Menu Category Grid** | 3-column product category cards (like BK "Our Menus") |
 | **WhatsApp Float** | Floating WhatsApp button (bottom-right corner) |
 
 ---
