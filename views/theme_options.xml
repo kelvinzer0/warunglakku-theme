@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Theme Options — Color Palette & Font Selection
+         Registers the Warung Lakku palette in Website Editor
+         ============================================================ -->
+
+    <!-- Register theme color palette for Website Editor color picker -->
+    <record id="theme_warunglakku_palette" model="theme.ir.asset">
+        <field name="key">theme_warunglakku.option_color_palette</field>
+        <field name="value">warunglakku</field>
+    </record>
+
+    <!-- Register theme font for Website Editor -->
+    <record id="theme_warunglakku_font" model="theme.ir.asset">
+        <field name="key">theme_warunglakku.option_font</field>
+        <field name="value">Warung Lakku</field>
+    </record>
+
+    <!-- Default body background -->
+    <record id="theme_warunglakku_body_bg" model="theme.ir.asset">
+        <field name="key">theme_warunglakku.option_body_bg</field>
+        <field name="value">#FFFDF7</field>
+    </record>
+
+    <!-- Default header style -->
+    <record id="theme_warunglakku_header" model="theme.ir.asset">
+        <field name="key">theme_warunglakku.option_header</field>
+        <field name="value">dark</field>
+    </record>
+
+    <!-- Default footer style -->
+    <record id="theme_warunglakku_footer" model="theme.ir.asset">
+        <field name="key">theme_warunglakku.option_footer</field>
+        <field name="value">dark</field>
+    </record>
+</odoo>
