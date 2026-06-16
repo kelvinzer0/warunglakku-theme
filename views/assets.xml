@@ -1,43 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ============================================================
-         Assets Declaration for Odoo 17
-         Uses ir.asset model (not template inheritance)
-         ============================================================ -->
 
-    <!-- Primary Color Variables - loaded BEFORE Bootstrap -->
-    <record id="warunglakku_asset_primary_colors" model="ir.asset">
-        <field name="name">Warung Lakku Primary Colors</field>
-        <field name="bundle">web._assets_primary_colors</field>
-        <field name="directive">append</field>
-        <field name="path">theme_warunglakku/static/src/scss/primary_variables.scss</field>
-        <field name="active" eval="True"/>
-    </record>
-
-    <!-- Custom Styles - loaded AFTER Bootstrap in frontend -->
-    <record id="warunglakku_asset_frontend" model="ir.asset">
+    <record id="asset_frontend_custom" model="ir.asset">
         <field name="name">Warung Lakku Custom Styles</field>
         <field name="bundle">web.assets_frontend</field>
         <field name="directive">append</field>
         <field name="path">theme_warunglakku/static/src/scss/custom.scss</field>
-        <field name="active" eval="True"/>
     </record>
 
-    <!-- Google Fonts - loaded in frontend -->
-    <record id="warunglakku_asset_fonts" model="ir.asset">
-        <field name="name">Warung Lakku Google Fonts</field>
-        <field name="bundle">web.assets_frontend</field>
-        <field name="directive">append</field>
-        <field name="path">theme_warunglakku/static/src/scss/fonts.scss</field>
-        <field name="active" eval="True"/>
-    </record>
-
-    <!-- Theme JavaScript -->
-    <record id="warunglakku_asset_js" model="ir.asset">
-        <field name="name">Warung Lakku JavaScript</field>
-        <field name="bundle">web.assets_frontend</field>
-        <field name="directive">append</field>
-        <field name="path">theme_warunglakku/static/src/js/theme.js</field>
-        <field name="active" eval="True"/>
-    </record>
 </odoo>
