@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Override the standard Odoo brand-promotion footer text.
+
+        Original (web.brand_promotion_message, id=182) renders:
+            Powered by <odoo_logo_link> - <_message>
+        where _message is set by:
+            website.brand_promotion        → "Create a free website"
+            website_sale.brand_promotion   → "The #1 Open Source eCommerce"
+
+        The Indonesian translation makes the rendered text:
+            "Dipersembahkan oleh Odoo - Nomor 1 Open Source eCommerce."
+
+        This override replaces the ENTIRE web.brand_promotion_message
+        template content with our own message:
+            "Diorkestrasi oleh Engineer Desa 🇮🇩"
+
+        Since all callers (web.brand_promotion, website.brand_promotion,
+        website_sale.brand_promotion) invoke <t t-call="web.brand_promotion_message">,
+        overriding the called template propagates our message to all
+        callers automatically. The _message variable set by callers
+        is still passed but ignored by our template.
+
+        Note: we replace the root <t> element of the inherited template.
+        Odoo QWeb inheritance applies this as: take the base template
+        source, apply XPath replace on /t (the root), our new content
+        becomes the new template body.
+    -->
+    <template id="wl_brand_promotion_message"
+              name="WL: Brand Promotion Message"
+              inherit_id="web.brand_promotion_message"
+              priority="99">
+        <xpath expr="/t" position="replace">
+            <t>
+                <span class="o_brand_promotion wl_brand_promotion">
+                    Diorkestrasi oleh Engineer Desa 🇮🇩
+                </span>
+            </t>
+        </xpath>
+    </template>
+</odoo>
