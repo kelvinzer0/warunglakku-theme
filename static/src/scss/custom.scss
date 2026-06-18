@@ -275,58 +275,123 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // ============================================================
-// MOBILE NAVBAR / HAMBURGER MENU FIX
+// MOBILE NAVBAR / HAMBURGER MENU FIX (v17.0.3.2.0)
+//
 // Issue: hamburger menu items appear with white text on white
-// background when the menu is open on mobile. Force dark text
-// color + white background for the collapse container on mobile.
-// Also fix the search box placeholder contrast.
+// background when the menu is open on mobile → INVISIBLE.
+//
+// ROOT CAUSE (confirmed via runtime agent-browser inspection):
+//   The mobile menu is NOT a `.navbar-collapse` (Bootstrap 4 style)
+//   — it is a Bootstrap 5 `.offcanvas.o_navbar_mobile` element.
+//   The previous CSS (v17.0.3.1.0) targeted `.navbar-collapse`,
+//   which is UNUSED on this site's mobile breakpoint, so the
+//   white-text-on-white-bg bug was never actually fixed.
+//
+//   Runtime-computed styles before this fix:
+//     .offcanvas.o_navbar_mobile  → bg=rgb(255,255,255), color=rgb(33,37,41)
+//     .offcanvas .nav-link        → color=rgba(255,255,255,0.85)  ← INVISIBLE
+//     .offcanvas .nav-link.active → color=rgb(245,196,0)  (yellow, ok)
+//     .offcanvas .btn-close       → color=rgba(255,255,255,0.85)  ← INVISIBLE
+//
+//   The links inherit `color: rgba(255,255,255,0.85)` from the
+//   dark-themed desktop header's nav-link style. We must force
+//   dark text via `!important` ("layer 2 force override" — per
+//   user instruction, since Odoo's HTML structure makes it hard
+//   to know which classes are actually used at runtime).
 // ============================================================
 
 @media (max-width: 991.98px) {
-    // Force the collapse container to a solid white background so
-    // any inherited transparent/dark bg from the navbar doesn't
-    // bleed through.
-    .navbar-collapse {
+    // Force the OFFCANVAS container to a solid white background.
+    // (Bootstrap's .offcanvas already has bg-white by default here,
+    //  but we add !important to override any theme color overrides.)
+    .offcanvas.o_navbar_mobile,
+    .offcanvas {
         background-color: #ffffff !important;
-        padding: 12px 16px !important;
-        margin-top: 8px !important;
-        border-radius: 8px !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+        color: #1f1f1f !important;
     }
 
-    // All menu items inside the collapse: dark text so it's readable
-    .navbar-collapse .nav-link,
-    .navbar-collapse .dropdown-item,
-    .navbar-collapse menuitem,
-    .navbar-collapse .o_menu_sign_in > a,
-    .navbar-collapse a {
-        color: var(--wl-text-main, #1f1f1f) !important;
+    // OFFCANVAS HEADER (contains close button + title)
+    .offcanvas-header {
+        background-color: #ffffff !important;
+        color: #1f1f1f !important;
+        border-bottom: 1px solid #e5e5e5 !important;
+    }
+
+    // OFFCANVAS BODY (the menu content)
+    .offcanvas-body {
+        background-color: #ffffff !important;
+        color: #1f1f1f !important;
+        padding: 12px 16px !important;
+    }
+
+    // ALL menu items inside the offcanvas: force DARK text so it's
+    // readable on the white background. The runtime inspection
+    // showed <a class="nav-link"> (with no extra class) has
+    // color=rgba(255,255,255,0.85) — that's the bug.
+    .offcanvas .nav-link,
+    .offcanvas .dropdown-item,
+    .offcanvas menuitem,
+    .offcanvas .o_menu_sign_in > a,
+    .offcanvas a:not(.btn):not(.btn-close),
+    .offcanvas .navbar-nav a {
+        color: #1f1f1f !important;
         font-weight: 500 !important;
         padding: 10px 12px !important;
         border-radius: 6px !important;
-        transition: background-color 0.15s ease;
+        background-color: transparent !important;
+        transition: background-color 0.15s ease, color 0.15s ease;
 
         &:hover {
             background-color: rgba(122, 12, 20, 0.06) !important;
-            color: var(--wl-maroon, #7a0c14) !important;
+            color: #7a0c14 !important;
+        }
+
+        // Active page link — keep maroon accent + bold weight
+        &.active {
+            color: #7a0c14 !important;
+            font-weight: 700 !important;
+            background-color: rgba(122, 12, 20, 0.08) !important;
         }
     }
 
-    // The "Hubungi Kami" CTA button in the mobile menu — keep yellow bg
-    .navbar-collapse .btn-warning,
-    .navbar-collapse .btn-primary {
-        background: var(--wl-yellow, #f5c400) !important;
-        color: var(--wl-text-main, #1f1f1f) !important;
+    // The CTA "Hubungi Kami" button inside the offcanvas menu — keep
+    // yellow bg with dark text (high contrast, recognizable as CTA).
+    .offcanvas .btn-warning,
+    .offcanvas .btn-primary,
+    .offcanvas .btn_cta,
+    .offcanvas a.btn {
+        background: #f5c400 !important;
+        color: #1f1f1f !important;
         border: none !important;
         font-weight: 600 !important;
         margin-top: 8px !important;
+
+        &:hover {
+            background: #7a0c14 !important;
+            color: #ffffff !important;
+        }
     }
 
-    // Search box inside collapse: ensure placeholder + input text are dark
-    .navbar-collapse input[type="search"],
-    .navbar-collapse input[type="text"],
-    .navbar-collapse .o_searchbar_form input {
-        color: var(--wl-text-main, #1f1f1f) !important;
+    // The CLOSE BUTTON (Bootstrap .btn-close). Its icon is an SVG
+    // mask using `currentColor`, so the link color bleeds through.
+    // Force a dark filter so the X icon is visible on white bg.
+    .offcanvas .btn-close,
+    .o_navbar_mobile .btn-close {
+        // Bootstrap's .btn-close uses background-image with mask.
+        // The `filter: invert(1)` flips the white X to black.
+        // Combined with opacity we get a clearly visible dark X.
+        filter: invert(1) grayscale(1) brightness(0.3) !important;
+        opacity: 1 !important;
+        background-color: transparent !important;
+    }
+
+    // SEARCH BOX inside offcanvas: ensure placeholder + input text
+    // are dark on light bg (was inheriting white text from header).
+    .offcanvas input[type="search"],
+    .offcanvas input[type="text"],
+    .offcanvas .o_searchbar_form input,
+    .offcanvas .form-control {
+        color: #1f1f1f !important;
         background-color: #f5f5f5 !important;
         border: 1px solid #e5e5e5 !important;
         border-radius: 6px !important;
@@ -338,19 +403,56 @@ h1, h2, h3, h4, h5, h6 {
         }
 
         &:focus {
-            border-color: var(--wl-maroon, #7a0c14) !important;
+            border-color: #7a0c14 !important;
             background-color: #ffffff !important;
             box-shadow: 0 0 0 3px rgba(122, 12, 20, 0.1) !important;
+            color: #1f1f1f !important;
         }
     }
 
-    // Hamburger toggle button itself — keep visible on dark header bg
-    .navbar-toggler {
+    // HAMBURGER TOGGLE BUTTON (on the header bar itself, not in menu).
+    // This stays on the dark maroon header — keep its icon WHITE.
+    .navbar-toggler,
+    .o_header_mobile_buttons_wrap .btn,
+    .o_header_mobile .navbar-toggler {
         color: #ffffff !important;
         border-color: rgba(255, 255, 255, 0.5) !important;
+        background-color: transparent !important;
 
         &:focus {
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25) !important;
+        }
+
+        // The hamburger icon (Bootstrap navbar-toggler-icon uses
+        // background-image with currentColor via SVG mask).
+        .navbar-toggler-icon {
+            filter: brightness(0) invert(1) !important;
+        }
+    }
+
+    // BACKWARD COMPATIBILITY: also keep the old `.navbar-collapse`
+    // rules in case any page still uses the legacy Bootstrap 4
+    // collapse (e.g. legacy snippets / customized headers).
+    .navbar-collapse {
+        background-color: #ffffff !important;
+        padding: 12px 16px !important;
+        margin-top: 8px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+
+        .nav-link,
+        .dropdown-item,
+        menuitem,
+        a:not(.btn) {
+            color: #1f1f1f !important;
+            font-weight: 500 !important;
+            padding: 10px 12px !important;
+            border-radius: 6px !important;
+
+            &:hover {
+                background-color: rgba(122, 12, 20, 0.06) !important;
+                color: #7a0c14 !important;
+            }
         }
     }
 }

@@ -5,36 +5,59 @@
         in the /shop grid so the customer can add to cart without
         opening the product detail page first.
 
-        The base website_sale.products_item template renders a <form>
-        that already posts to /shop/cart/update with csrf_token +
-        product_template_id. We just need to inject a visible submit
-        button into the empty .o_wsale_product_btn placeholder div
-        (currently empty in the base template).
+        BUG HISTORY (v17.0.3.1.0):
+          The previous version of this view injected only a <button>
+          and a hidden <input name="add_qty">. The base website_sale
+          template's <form> already contains csrf_token but DOES NOT
+          include product_template_id / product_id. The /shop/cart/update
+          controller in Odoo 17 has signature:
 
-        Clicking the + button submits the form → adds 1 unit of the
-        product to the cart → redirects to /shop/cart. The product
-        image link still works (separate <a> tag, type="button" on
-        our submit prevents it from hijacking the form submit).
+              @http.route(['/shop/cart/update'], type='http', auth="public",
+                          methods=['POST'], website=True)
+              def cart_update(self, product_id, add_qty=1, set_qty=0,
+                              product_custom_attribute_values=None,
+                              no_variant_attribute_values=None,
+                              express=False, **kwargs):
 
-        Strategy: use position="inside" on .o_wsale_product_btn so
-        we APPEND our button into that empty placeholder div.
+          `product_id` is REQUIRED. Without it Odoo returns HTTP 400
+          "Oops! Terjadi kesalahan" (which the user reported as 500).
+
+        FIX (v17.0.3.2.0):
+          1. Inject <input type="hidden" name="product_id"
+                 t-att-value="product.product_variant_id.id"/>
+             so the form submits the product.product ID (NOT template).
+          2. Wrap the button in <t t-if="product.product_variant_id">
+             to ONLY render when the template has an active variant.
+             This handles two edge cases:
+              - Multi-variant products: customer must open detail page
+                to pick attribute values (product_variant_id is False
+                when there is >1 variant).
+              - Products with archived variants: 6 of the 25 published
+                templates on this site have variant active=False
+                (likely created from WA module without proper variant
+                creation). The button is hidden for these so the
+                customer is sent to the detail page where they see
+                a "not available" state instead of a 400 error.
+          3. Remove the redundant name="add_qty"/value="1" on the
+             button and the duplicate hidden input — add_qty defaults
+             to 1 in the controller signature.
     -->
     <template id="wl_products_item_add_to_cart"
               name="WL: Add to Cart button on product card"
               inherit_id="website_sale.products_item">
         <xpath expr="//div[hasclass('o_wsale_product_btn')]" position="inside">
-            <button type="submit"
-                    class="btn wl_card_add_to_cart_btn"
-                    name="add_qty"
-                    value="1"
-                    title="Tambahkan ke Keranjang"
-                    aria-label="Tambahkan ke Keranjang">
-                <i class="fa fa-plus"></i>
-                <span class="wl_cart_label">Keranjang</span>
-            </button>
-            <!-- Hidden input so /shop/cart/update receives add_qty=1
-                 even though some Odoo versions look for it as a field. -->
-            <input type="hidden" name="add_qty" value="1"/>
+            <t t-if="product.product_variant_id">
+                <input type="hidden"
+                       name="product_id"
+                       t-att-value="product.product_variant_id.id"/>
+                <button type="submit"
+                        class="btn wl_card_add_to_cart_btn"
+                        title="Tambahkan ke Keranjang"
+                        aria-label="Tambahkan ke Keranjang">
+                    <i class="fa fa-plus"></i>
+                    <span class="wl_cart_label">Keranjang</span>
+                </button>
+            </t>
         </xpath>
     </template>
 </odoo>
