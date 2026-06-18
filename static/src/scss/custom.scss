@@ -1306,5 +1306,136 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+// ============================================================
+// v17.0.3.7.0 — PRODUCT CARD REFINEMENTS
+//
+// Three user-reported issues on /shop:
+//   1. Product card image: should fill the image area completely
+//      (no letterboxing whitespace). Previous rule used
+//      object-fit: contain + 8px padding which left whitespace
+//      around non-square product photos.
+//      FIX: switch to object-fit: cover, remove padding, force
+//      width:100% + height:100% so image fills container entirely.
+//   2. List view (Daftar) layout: should display 1 card per row,
+//      not 4. Odoo's default uses a 4-column CSS grid regardless
+//      of grid/list mode. The card itself switches to flex-row
+//      (image left, info right) in list mode, but stays in a
+//      4-col grid — visually crowded.
+//      FIX: use :has() selector — when #o_wsale_apply_list radio
+//      is checked, force tbody to 1-column grid.
+//   3. Sort button on mobile: hidden because Odoo's default
+//      template applies Bootstrap classes d-none + d-lg-inline-block
+//      to .o_sortby_dropdown, hiding it below the lg breakpoint.
+//      FIX: force display: inline-flex on .o_sortby_dropdown at
+//      all viewports so it's always visible.
+// ============================================================
+
+// ---- FIX #1: PRODUCT IMAGE — full container fill (no letterbox) ----
+// Override the v3.6.0 rule that set object-fit: contain + 8px padding.
+// The new rule makes the image fill the entire .oe_product_image area
+// (width:100%, height:100%, object-fit: cover) for a clean, edge-to-edge
+// product photo look. Hover zoom is preserved (1.08 scale on card hover).
+.oe_product_cart .oe_product_image_img_wrapper img,
+.o_wsale_products_grid_table_wrapper .oe_product_image_img_wrapper img {
+    object-fit: cover !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    // Keep the smooth hover zoom from v3.6.0
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+// Ensure the image wrapper itself doesn't constrain the image — let it
+// fill 100% of the .oe_product_image_link area.
+.oe_product_cart .oe_product_image_img_wrapper,
+.o_wsale_products_grid_table_wrapper .oe_product_image_img_wrapper {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+// In list view (card uses flex-direction: row), give the image a fixed
+// square area on the left so the horizontal card looks balanced.
+body:has(#o_wsale_apply_list:checked) .oe_product_cart .oe_product_image,
+body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper .oe_product_image {
+    flex: 0 0 200px !important;
+    width: 200px !important;
+    max-width: 200px !important;
+    height: 200px !important;
+    max-height: 200px !important;
+}
+
+@media (max-width: 575.98px) {
+    body:has(#o_wsale_apply_list:checked) .oe_product_cart .oe_product_image,
+    body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper .oe_product_image {
+        flex: 0 0 130px !important;
+        width: 130px !important;
+        max-width: 130px !important;
+        height: 130px !important;
+        max-height: 130px !important;
+    }
+}
+
+// ---- FIX #2: LIST VIEW — force 1 column layout ----
+// Odoo's default .o_wsale_products_grid_table_wrapper tbody uses
+// display: grid with 4 columns (e.g. "198px 198px 198px 198px").
+// When the user picks list view (#o_wsale_apply_list radio checked),
+// we override to 1 column so each card takes the full row width.
+//
+// The :has() selector is supported in all modern browsers
+// (Chrome 105+, Firefox 121+, Safari 15.4+).
+body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper tbody {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+}
+
+body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper table {
+    display: block !important;
+    width: 100% !important;
+}
+
+// In list mode, each cell takes the full row (1 column).
+body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper td.oe_product {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+// In list mode, the grid wrapper (card cell) should fill the row.
+body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper .o_wsale_product_grid_wrapper {
+    min-height: 200px !important;
+    height: 200px !important;
+}
+
+@media (max-width: 575.98px) {
+    body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper .o_wsale_product_grid_wrapper {
+        min-height: 130px !important;
+        height: 130px !important;
+    }
+    // On mobile, list mode still uses 1-col grid (the regular mobile
+    // 2-col grid rule is overridden by the :has() rule above).
+    body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper tbody,
+    body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper table {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+// ---- FIX #3: SORT BUTTON — always visible (incl. mobile) ----
+// Odoo's default .o_sortby_dropdown has Bootstrap classes
+// "d-none d-lg-inline-block" which hide the sort button below lg.
+// Force display: inline-flex at all viewports so users can sort
+// on mobile too. (The toggle's text label is already responsive:
+// it shows an icon on mobile and "Featured" text on desktop via
+// its own d-none/d-lg-inline spans — we keep that behavior.)
+.products_header .o_sortby_dropdown {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+// Note: the existing @media (max-width:991.98px) rule for
+// .products_header above already sets margin-right:auto on
+// .o_sortby_dropdown and hides the .text-muted label on mobile,
+// so no additional mobile-specific override is needed here.
+
 
 
