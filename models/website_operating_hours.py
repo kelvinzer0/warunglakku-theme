@@ -146,11 +146,17 @@ class Website(models.Model):
             except (ValueError, TypeError):
                 fetched_at_display = ''
 
+        # Find today's day_info for convenience (used by mobile accordion
+        # to show today's hours inline in the collapsed summary).
+        today_info = next(
+            (d for d in days if d.get('is_today')), None)
+
         return {
             'available': True,
             'is_open_now': is_open_now,
             'today_dow': today_dow,
             'today_name': today_name,
+            'today': today_info,
             'timezone': bh.get('timezone', 'Asia/Jakarta'),
             'days': days,
             'fetched_at': fetched_at_display,

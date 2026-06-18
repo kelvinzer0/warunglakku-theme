@@ -76,4 +76,85 @@
         </field>
     </record>
 
+    <!--
+        Mobile-only operating hours accordion
+        =====================================
+        The sidebar aside (#products_grid_before) is `d-none d-lg-block`
+        so it never renders on mobile. Inject a compact <details>
+        accordion right above the products toolbar, visible only on
+        screens below lg (992px). Default collapsed = just status
+        + today's hours; tap to expand = full 7-day list.
+    -->
+    <record model="ir.ui.view" id="shop_operating_hours_mobile">
+        <field name="name">Warung Lakku: Shop Mobile Operating Hours</field>
+        <field name="key">theme_warunglakku.shop_operating_hours_mobile</field>
+        <field name="type">qweb</field>
+        <field name="inherit_id" ref="website_sale.products"/>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//div[@id='products_grid']/div[contains(@class, 'products_header')]" position="before">
+                    <t t-set="oh_m" t-value="website.get_warunglakku_operating_hours()"/>
+                    <details class="wl_oh_mobile d-lg-none" t-att-data-available="'true' if oh_m.get('available') else 'false'" t-att-data-open="'true' if oh_m.get('is_open_now') else 'false'">
+                        <summary class="wl_oh_mobile_summary">
+                            <span class="wl_oh_mobile_left">
+                                <i class="fa fa-clock-o"/>
+                                <span class="wl_oh_mobile_title">Jam Operasional</span>
+                            </span>
+                            <t t-if="oh_m.get('available')">
+                                <span class="wl_oh_mobile_status" t-att-data-open="'true' if oh_m.get('is_open_now') else 'false'">
+                                    <span class="wl_oh_dot"/>
+                                    <t t-if="oh_m.get('is_open_now')">
+                                        <span class="wl_oh_status_text">Buka Sekarang</span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="wl_oh_status_text">Tutup</span>
+                                    </t>
+                                </span>
+                                <t t-set="today_m" t-value="oh_m.get('today')"/>
+                                <t t-if="today_m">
+                                    <span class="wl_oh_mobile_today">
+                                        <t t-esc="today_m.get('name')"/>: <t t-esc="today_m.get('hours_display')"/>
+                                    </span>
+                                </t>
+                                <i class="fa fa-angle-down wl_oh_mobile_chevron"/>
+                            </t>
+                            <t t-else="">
+                                <span class="wl_oh_mobile_unavailable">Belum tersedia</span>
+                            </t>
+                        </summary>
+                        <t t-if="oh_m.get('available')">
+                            <div class="wl_oh_mobile_body">
+                                <ul class="wl_oh_days">
+                                    <t t-foreach="oh_m.get('days', [])" t-as="day">
+                                        <li t-att-class="'wl_oh_day' + (' wl_oh_day_today' if day.get('is_today') else '') + (' wl_oh_day_open' if day.get('is_open') else '')">
+                                            <span class="wl_oh_day_name">
+                                                <t t-esc="day.get('name')"/>
+                                                <t t-if="day.get('is_today')">
+                                                    <span class="wl_oh_today_badge">Hari ini</span>
+                                                </t>
+                                            </span>
+                                            <span class="wl_oh_day_hours" t-esc="day.get('hours_display')"/>
+                                        </li>
+                                    </t>
+                                </ul>
+                                <div class="wl_oh_footer">
+                                    <div class="wl_oh_sync">
+                                        <i class="fa fa-whatsapp"/>
+                                        <small>Disinkronkan dari WhatsApp Business</small>
+                                    </div>
+                                    <t t-if="oh_m.get('fetched_at')">
+                                        <small class="wl_oh_updated">
+                                            Diperbarui: <t t-esc="oh_m.get('fetched_at')"/>
+                                        </small>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </details>
+                </xpath>
+            </data>
+        </field>
+    </record>
+
 </odoo>
