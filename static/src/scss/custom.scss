@@ -588,3 +588,36 @@ h1, h2, h3, h4, h5, h6 {
     display: none;
 }
 
+// ============================================================
+// FOOTER MAP (v17.0.3.4.0)
+// Style the OpenStreetMap iframe embedded in the footer's
+// "Alamat Kami" column.
+// ============================================================
+.wl-footer-map-embed {
+    overflow: hidden !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease !important;
+    line-height: 0 !important;
+
+    &:hover {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18) !important;
+        border-color: var(--wl-maroon, #7a0c14) !important;
+    }
+
+    iframe {
+        display: block !important;
+        width: 100% !important;
+        border: 0 !important;
+    }
+}
+
+// Style the map action buttons under the embed
+#footer .wl-footer-map-embed + .mt-2 .btn {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.75rem !important;
+    padding: 4px 10px !important;
+    border-radius: 16px !important;
+    font-weight: 500 !important;
+}
+
+

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Custom footer for Warung Lakku (theme_warunglakku v17.0.3.4.0).
+
+        Original footer was rendered by website.footer_custom (id=1237,
+        Indonesian version) inheriting from website.layout. The base
+        footer has 3 columns:
+          col-lg-2  "Link yang Berguna"  (useful links)
+          col-lg-5  "Tentang kami"       (about us)
+          col-lg-4  "Connect with us"    (contact info + social media)
+
+        User requested changes:
+          1. "Connect with us" → "Kontak kami" (heading translation fix)
+          2. info@yourcompany.example.com → hello@warunglakku.com
+          3. +1 555-555-5556 → +62 857-3355-6953
+          4. "Tentang kami" section → "Alamat kami" section with
+             store address + GPS coordinates + embedded OpenStreetMap
+
+        Strategy: inherit website.footer_custom with priority=99 and
+        position="replace" on the #footer div. This fully replaces
+        the inherited footer content with our own 3-column layout.
+
+        Map approach: use OpenStreetMap (no API key needed, works
+        in Indonesia). Two layers:
+          - Static map image: https://staticmap.openstreetmap.de/staticmap.php?center=LAT,LON&zoom=15&size=600x300&markers=LAT,LON,red-pushpin
+            Rendered as <img> so it loads even without JS / cookies.
+          - Click-through link to https://www.openstreetmap.org/?mlat=LAT&mlon=LON#map=15/LAT/LON
+            Opens full interactive map in new tab.
+          - "Buka di Google Maps" link below using geo: URI (works on
+            mobile, opens native Google Maps / Waze app).
+
+        Coordinates for Binangun, Blitar, Jawa Timur, Indonesia:
+          LAT = -8.2340141
+          LON = 112.3361544
+        (geocoded via OSM Nominatim API on 2026-06-18)
+    -->
+    <template id="wl_footer_custom"
+              name="WL: Custom Footer"
+              inherit_id="website.footer_custom"
+              priority="99">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt40 pb16" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+
+                            <!-- ====================================================== -->
+                            <!-- COLUMN 1: Useful Links (kept as-is from original)       -->
+                            <!-- ====================================================== -->
+                            <div class="col-lg-2 pt24 pb24">
+                                <h5 class="mb-3">Link yang Berguna</h5>
+                                <ul class="list-unstyled">
+                                    <li><a href="/">Beranda</a></li>
+                                    <li><a href="/shop">Toko</a></li>
+                                    <li><a href="/contactus">Kontak kami</a></li>
+                                    <li><a href="/privacy">Kebijakan Privasi</a></li>
+                                </ul>
+                            </div>
+
+                            <!-- ====================================================== -->
+                            <!-- COLUMN 2: Alamat Kami (replaces "Tentang kami")         -->
+                            <!-- ====================================================== -->
+                            <div class="col-lg-5 pt24 pb24">
+                                <h5 class="mb-3">Alamat Kami</h5>
+                                <p>
+                                    <i class="fa fa-map-marker fa-fw me-2 text-primary"/>
+                                    Dusun Ngrekesan, Desa Ngadri, Kec. Binangun,<br/>
+                                    Kab. Blitar, Jawa Timur 66193, Indonesia
+                                </p>
+                                <p>
+                                    <i class="fa fa-location-arrow fa-fw me-2 text-primary"/>
+                                    <strong>Koordinat GPS:</strong>
+                                    <a href="https://www.openstreetmap.org/?mlat=-8.2340141&amp;mlon=112.3361544#map=15/-8.2340141/112.3361544"
+                                       target="_blank" rel="noopener">
+                                        -8.2340141, 112.3361544
+                                    </a>
+                                </p>
+                                <!-- Embedded OpenStreetMap iframe (interactive, no API key).
+                                     Using bbox around the store coords so the marker is centered.
+                                     bbox format: min_lon,min_lat,max_lon,max_lat (slight expansion
+                                     around the store so the map shows surrounding streets). -->
+                                <div class="wl-footer-map-embed rounded shadow-sm overflow-hidden">
+                                    <iframe
+                                        title="Peta lokasi Warung Lakku"
+                                        src="https://www.openstreetmap.org/export/embed.html?bbox=112.3160%2C-8.2490%2C112.3560%2C-8.2190&amp;layer=mapnik&amp;marker=-8.2340141%2C112.3361544"
+                                        style="width: 100%; height: 220px; border: 0; display: block;"
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer-when-downgrade"/>
+                                </div>
+                                <div class="mt-2 d-flex flex-wrap gap-2">
+                                    <a href="geo:-8.2340141,112.3361544?q=-8.2340141,112.3361544"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fa fa-mobile me-1"/>Buka di Ponsel
+                                    </a>
+                                    <a href="https://www.google.com/maps/search/?api=1&amp;query=-8.2340141,112.3361544"
+                                       target="_blank" rel="noopener"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="fa fa-map me-1"/>Google Maps
+                                    </a>
+                                    <a href="https://www.openstreetmap.org/?mlat=-8.2340141&amp;mlon=112.3361544#map=15/-8.2340141/112.3361544"
+                                       target="_blank" rel="noopener"
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="fa fa-globe me-1"/>Peta Lengkap
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- ====================================================== -->
+                            <!-- COLUMN 3: Kontak Kami (replaces "Connect with us")      -->
+                            <!-- ====================================================== -->
+                            <div id="connect" class="col-lg-4 offset-lg-1 pt24 pb24">
+                                <h5 class="mb-3">Kontak Kami</h5>
+                                <ul class="list-unstyled">
+                                    <li>
+                                        <i class="fa fa-comment fa-fw me-2"/>
+                                        <span><a href="/contactus">Hubungi Kami</a></span>
+                                    </li>
+                                    <li>
+                                        <i class="fa fa-envelope fa-fw me-2"/>
+                                        <span><a href="mailto:hello@warunglakku.com">hello@warunglakku.com</a></span>
+                                    </li>
+                                    <li>
+                                        <i class="fa fa-phone fa-fw me-2"/>
+                                        <span class="o_force_ltr">
+                                            <a href="tel:+6285733556953">+62 857-3355-6953</a>
+                                        </span>
+                                    </li>
+                                    <li>
+                                        <i class="fa fa-whatsapp fa-fw me-2"/>
+                                        <span>
+                                            <a href="https://wa.me/6285733556953"
+                                               target="_blank" rel="noopener">+62 857-3355-6953</a>
+                                        </span>
+                                    </li>
+                                </ul>
+
+                                <!-- Social media links (kept from original) -->
+                                <div class="s_social_media text-start o_not_editable"
+                                     data-snippet="s_social_media"
+                                     data-name="Social Media"
+                                     contenteditable="false">
+                                    <h5 class="s_social_media_title d-none" contenteditable="true">Ikuti kami</h5>
+                                    <a href="/website/social/facebook"
+                                       class="s_social_media_facebook"
+                                       target="_blank" aria-label="Facebook">
+                                        <i class="fa fa-facebook rounded-circle shadow-sm o_editable_media"/>
+                                    </a>
+                                    <a href="/website/social/twitter"
+                                       class="s_social_media_twitter"
+                                       target="_blank" aria-label="Twitter">
+                                        <i class="fa fa-twitter rounded-circle shadow-sm o_editable_media"/>
+                                    </a>
+                                    <a href="/website/social/linkedin"
+                                       class="s_social_media_linkedin"
+                                       target="_blank" aria-label="LinkedIn">
+                                        <i class="fa fa-linkedin rounded-circle shadow-sm o_editable_media"/>
+                                    </a>
+                                    <a href="/" class="text-800" aria-label="Halaman ekstra">
+                                        <i class="fa fa-home rounded-circle shadow-sm o_editable_media"/>
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+    </template>
+</odoo>
