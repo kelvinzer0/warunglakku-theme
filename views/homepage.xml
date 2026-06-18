@@ -1,116 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ============================================================
-         Homepage Template — Warung Lakku
-         Layout inspired by bkdelivery.co.id:
-         1. Header (navbar)
-         2. Hero Slider/Banner
-         3. Product Category Grid (3 columns) — langsung ke menu!
-         4. WhatsApp Float Button
-         ============================================================ -->
 
-    <template id="homepage_warunglakku" name="Warung Lakku Homepage" page="True" priority="29">
-        <t t-call="website.layout">
+    <template id="homepage_warunglakku" name="Warung Lakku Homepage" inherit_id="website.homepage" priority="29">
+        <xpath expr="//div[@id='wrap']" position="replace">
             <div id="wrap" class="oe_structure oe_empty">
-
-                <!-- ====================================================
-                     HERO BANNER — Full-width gradient banner
-                     Simple, impactful, no excessive text
-                     ==================================================== -->
-                <section class="wl-hero-banner" data-snippet="wl_hero_banner">
-                    <div class="wl-hero-inner">
-                        <div class="wl-hero-content">
-                            <h1 class="wl-hero-title" contenteditable="true">Warung Lakku</h1>
-                            <p class="wl-hero-subtitle" contenteditable="true">Rasa Autentik, Harga Bersahabat</p>
-                            <a href="/shop" class="wl-hero-cta" contenteditable="true">Pesan Sekarang</a>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ====================================================
-                     MEMBER / PROMO BAR — Singkat seperti BK Crown
-                     ==================================================== -->
-                <section class="wl-promo-bar" data-snippet="wl_promo_bar">
+                <section class="wl-products-section">
                     <div class="container">
-                        <div class="wl-promo-inner">
-                            <div class="wl-promo-text">
-                                <span class="wl-promo-icon">🔥</span>
-                                <h3 contenteditable="true">Pesan via WhatsApp dan dapatkan promo spesial!</h3>
-                            </div>
-                            <a href="https://wa.me/6285854749767" target="_blank" class="wl-promo-btn" contenteditable="true">Chat WhatsApp</a>
+                        <div class="wl-products-grid">
+                            <t t-set="products" t-value="request.env['product.template'].sudo().search([('website_published', '=', True), ('sale_ok', '=', True)], limit=12, order='sequence, id')"/>
+                            <t t-foreach="products" t-as="product">
+                                <a t-attf-href="/shop/#{product.product_variant_id.id}" class="wl-product-card">
+                                    <div class="wl-product-img-wrapper">
+                                        <img t-att-src="image_url(product, 'image_256')" t-att-alt="product.name" class="wl-product-img"/>
+                                    </div>
+                                    <div class="wl-product-info">
+                                        <h3 class="wl-product-name" t-out="product.name"/>
+                                        <div class="wl-product-price">
+                                            <span class="wl-price-amount" t-out="product.website_price"/>
+                                        </div>
+                                    </div>
+                                </a>
+                            </t>
                         </div>
                     </div>
                 </section>
-
-                <!-- ====================================================
-                     MENU KATEGORI — Grid 3 kolom seperti BK "Our Menus"
-                     Langsung tunjukkan kategori produk, gak bertele-tele
-                     ==================================================== -->
-                <section class="wl-menu-section" data-snippet="wl_menu_section">
-                    <div class="container">
-                        <h2 class="wl-menu-title" contenteditable="true">Menu Kami</h2>
-                        <div class="wl-menu-grid">
-
-                            <!-- Menu Item 1 -->
-                            <a href="/shop" class="wl-menu-card">
-                                <div class="wl-menu-img-wrapper">
-                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Menu Lengkap" class="wl-menu-img"/>
-                                </div>
-                                <h3 class="wl-menu-name" contenteditable="true">Menu Lengkap</h3>
-                            </a>
-
-                            <!-- Menu Item 2 -->
-                            <a href="/shop" class="wl-menu-card">
-                                <div class="wl-menu-img-wrapper">
-                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Paket Hemat" class="wl-menu-img"/>
-                                </div>
-                                <h3 class="wl-menu-name" contenteditable="true">Paket Hemat</h3>
-                            </a>
-
-                            <!-- Menu Item 3 -->
-                            <a href="/shop" class="wl-menu-card">
-                                <div class="wl-menu-img-wrapper">
-                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Promo Hari Ini" class="wl-menu-img"/>
-                                </div>
-                                <h3 class="wl-menu-name" contenteditable="true">Promo Hari Ini</h3>
-                            </a>
-
-                            <!-- Menu Item 4 -->
-                            <a href="/shop" class="wl-menu-card">
-                                <div class="wl-menu-img-wrapper">
-                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Minuman" class="wl-menu-img"/>
-                                </div>
-                                <h3 class="wl-menu-name" contenteditable="true">Minuman</h3>
-                            </a>
-
-                            <!-- Menu Item 5 -->
-                            <a href="/shop" class="wl-menu-card">
-                                <div class="wl-menu-img-wrapper">
-                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Snack &amp; Side" class="wl-menu-img"/>
-                                </div>
-                                <h3 class="wl-menu-name" contenteditable="true">Snack &amp; Side</h3>
-                            </a>
-
-                            <!-- Menu Item 6 -->
-                            <a href="/shop" class="wl-menu-card">
-                                <div class="wl-menu-img-wrapper">
-                                    <img src="/theme_warunglakku/static/img/icon.svg" alt="Catering &amp; Pesan Besar" class="wl-menu-img"/>
-                                </div>
-                                <h3 class="wl-menu-name" contenteditable="true">Catering &amp; Pesan Besar</h3>
-                            </a>
-
-                        </div>
-                    </div>
-                </section>
-
             </div>
+        </xpath>
+    </template>
 
-            <!-- WhatsApp Float Button -->
+    <template id="snippet_wl_hero_banner" name="Hero Banner">
+        <section class="wl-hero-banner" data-snippet="snippet_wl_hero_banner" data-name="Hero Banner">
+            <div class="wl-hero-inner">
+                <div class="wl-hero-content">
+                    <h1 class="wl-hero-title">Warung Lakku</h1>
+                    <p class="wl-hero-subtitle">Rasa Autentik, Harga Bersahabat</p>
+                    <a href="/shop" class="wl-hero-cta">Pesan Sekarang</a>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="snippet_wl_promo_bar" name="Promo Bar">
+        <section class="wl-promo-bar" data-snippet="snippet_wl_promo_bar" data-name="Promo Bar">
+            <div class="container">
+                <div class="wl-promo-inner">
+                    <div class="wl-promo-text">
+                        <span class="wl-promo-icon">&#x1F525;</span>
+                        <h3>Pesan via WhatsApp dan dapatkan promo spesial!</h3>
+                    </div>
+                    <a href="https://wa.me/6285854749767" target="_blank" class="wl-promo-btn">Chat WhatsApp</a>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="snippet_wl_menu_grid" name="Menu Category Grid">
+        <section class="wl-menu-section" data-snippet="snippet_wl_menu_grid" data-name="Menu Category Grid">
+            <div class="container">
+                <h2 class="wl-menu-title">Menu Kami</h2>
+                <div class="wl-menu-grid">
+                    <a href="/shop" class="wl-menu-card">
+                        <div class="wl-menu-img-wrapper">
+                            <img src="/theme_warunglakku/static/img/icon.svg" alt="Menu" class="wl-menu-img"/>
+                        </div>
+                        <h3 class="wl-menu-name">Menu Lengkap</h3>
+                    </a>
+                    <a href="/shop" class="wl-menu-card">
+                        <div class="wl-menu-img-wrapper">
+                            <img src="/theme_warunglakku/static/img/icon.svg" alt="Paket" class="wl-menu-img"/>
+                        </div>
+                        <h3 class="wl-menu-name">Paket Hemat</h3>
+                    </a>
+                    <a href="/shop" class="wl-menu-card">
+                        <div class="wl-menu-img-wrapper">
+                            <img src="/theme_warunglakku/static/img/icon.svg" alt="Promo" class="wl-menu-img"/>
+                        </div>
+                        <h3 class="wl-menu-name">Promo Hari Ini</h3>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="snippet_wl_wa_button" name="WhatsApp Float Button">
+        <div class="wa-float-btn-wrapper" data-snippet="snippet_wl_wa_button">
             <a href="https://wa.me/6285854749767" target="_blank" rel="noopener" class="wa-float-btn" title="Chat WhatsApp">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="white">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
             </a>
-        </t>
+        </div>
     </template>
+
+    <template id="snippet_warunglakku_snippets" name="Warung Lakku Snippets" inherit_id="website.snippets">
+        <xpath expr="//div[@id='snippet_content']" position="inside">
+            <t t-snippet="theme_warunglakku.snippet_wl_hero_banner"/>
+            <t t-snippet="theme_warunglakku.snippet_wl_promo_bar"/>
+            <t t-snippet="theme_warunglakku.snippet_wl_menu_grid"/>
+        </xpath>
+        <xpath expr="//div[@id='snippet_structure']" position="inside">
+            <t t-snippet="theme_warunglakku.snippet_wl_wa_button"/>
+        </xpath>
+    </template>
+
 </odoo>

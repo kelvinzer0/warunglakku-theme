@@ -1,41 +1,34 @@
 // ============================================================
 // Warung Lakku Theme — Primary Variables
-// This file defines the color palette and font configuration
-// for Odoo's SCSS compilation chain.
-//
-// IMPORTANT: This file is loaded BEFORE Odoo's
-// secondary_variables.scss, so all variables defined here
-// will be available during Bootstrap compilation.
+// Design system matched to wifi-warunglakku portal
+// Maroon (#7a0c14) + Yellow (#f5c400) palette
 // ============================================================
 
 // ---- Color Palette ----
-// Warung Lakku brand colors - adapted from BK Delivery,
-// reimagined with Indonesian warung aesthetics
-
 $o-color-palettes: map-merge(if(variable-exists(o-color-palettes), $o-color-palettes, ()), (
     'warunglakku': (
-        'body': #FFFDF7,                    // Warm white background (not pure white)
-        'menu': 2,                           // 1=light, 2=dark menu
-        'footer': #2D2D2D,                   // Charcoal footer
-        'text': #2D2D2D,                     // Primary text
-        'h1':  #2D2D2D,                      // Heading color
-        'h2':  #2D2D2D,                      // Heading 2 color
-        'h3':  #2D2D2D,                      // Heading 3 color
-        'h4':  #2D2D2D,                      // Heading 4 color
-        'h5':  #2D2D2D,                      // Heading 5 color
-        'h6':  #2D2D2D,                      // Heading 6 color
-        'primary': #FFC107,                  // Warung Yellow - main brand color
-        'secondary': #FF8F00,                // Amber Deep - secondary brand
-        'alpha': #FF5722,                    // Deep Orange - accent
-        'beta': #E91E63,                     // Pink Pop - highlight
-        'gamma': #4CAF50,                    // Success Green
-        'delta': #FF9800,                    // Warning Orange
-        'epsilon': #2196F3,                  // Info Blue
-        'success': #4CAF50,
-        'warning': #FF9800,
-        'danger': #F44336,
-        'info': #2196F3,
-        'light': #FFFDF7,                    // Light variant
+        'body': #fafafa,
+        'menu': 2,
+        'footer': #5a080e,
+        'text': #1f1f1f,
+        'h1':  #5a080e,
+        'h2':  #5a080e,
+        'h3':  #1f1f1f,
+        'h4':  #1f1f1f,
+        'h5':  #1f1f1f,
+        'h6':  #1f1f1f,
+        'primary': #7a0c14,
+        'secondary': #f5c400,
+        'alpha': #5a080e,
+        'beta': #ffd84d,
+        'gamma': #27ae60,
+        'delta': #f39c12,
+        'epsilon': #3498db,
+        'success': #27ae60,
+        'warning': #f39c12,
+        'danger': #e74c3c,
+        'info': #3498db,
+        'light': #fafafa,
     ),
 ));
 
@@ -52,33 +45,31 @@ $o-theme-fonts: map-merge(if(variable-exists(o-theme-fonts), $o-theme-fonts, ())
 ));
 
 // ---- Theme Font Selection ----
-$o-theme-font-family: 'Poppins', sans-serif;
+$o-theme-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 $o-theme-headings-font-family: 'Poppins', sans-serif;
 
 // ---- User Theme Color Palette ----
-// This is the palette that will be available in the Website Editor
-// color picker, allowing users to customize colors from the UI
 $o-user-theme-color-palette: map-merge(if(variable-exists(o-user-theme-color-palette), $o-user-theme-color-palette, ()), (
-    'body': #FFFDF7,
+    'body': #fafafa,
     'menu': 2,
-    'footer': #2D2D2D,
-    'text': #2D2D2D,
-    'h1': #2D2D2D,
-    'h2': #2D2D2D,
-    'h3': #2D2D2D,
-    'h4': #2D2D2D,
-    'h5': #2D2D2D,
-    'h6': #2D2D2D,
-    'primary': #FFC107,
-    'secondary': #FF8F00,
-    'alpha': #FF5722,
-    'beta': #E91E63,
-    'gamma': #4CAF50,
-    'delta': #FF9800,
-    'epsilon': #2196F3,
-    'success': #4CAF50,
-    'warning': #FF9800,
-    'danger': #F44336,
-    'info': #2196F3,
-    'light': #FFFDF7,
+    'footer': #5a080e,
+    'text': #1f1f1f,
+    'h1': #5a080e,
+    'h2': #5a080e,
+    'h3': #1f1f1f,
+    'h4': #1f1f1f,
+    'h5': #1f1f1f,
+    'h6': #1f1f1f,
+    'primary': #7a0c14,
+    'secondary': #f5c400,
+    'alpha': #5a080e,
+    'beta': #ffd84d,
+    'gamma': #27ae60,
+    'delta': #f39c12,
+    'epsilon': #3498db,
+    'success': #27ae60,
+    'warning': #f39c12,
+    'danger': #e74c3c,
+    'info': #3498db,
+    'light': #fafafa,
 ));

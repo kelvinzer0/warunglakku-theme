@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ============================================================
-         Custom Snippets for Warung Lakku Theme
-         BK Delivery-inspired: Simple, product-focused layout
-         ============================================================ -->
 
-    <!-- Hero Banner Snippet -->
     <template id="snippet_wl_hero_banner" name="Hero Banner">
         <section class="wl-hero-banner" data-snippet="snippet_wl_hero_banner" data-name="Hero Banner">
             <div class="wl-hero-inner">
@@ -18,7 +13,6 @@
         </section>
     </template>
 
-    <!-- Promo Bar Snippet -->
     <template id="snippet_wl_promo_bar" name="Promo Bar">
         <section class="wl-promo-bar" data-snippet="snippet_wl_promo_bar" data-name="Promo Bar">
             <div class="container">
@@ -33,7 +27,6 @@
         </section>
     </template>
 
-    <!-- Menu Category Grid Snippet -->
     <template id="snippet_wl_menu_grid" name="Menu Category Grid">
         <section class="wl-menu-section" data-snippet="snippet_wl_menu_grid" data-name="Menu Category Grid">
             <div class="container">
@@ -62,7 +55,6 @@
         </section>
     </template>
 
-    <!-- WhatsApp Floating Button Snippet -->
     <template id="snippet_wl_wa_button" name="WhatsApp Float Button">
         <div class="wa-float-btn-wrapper" data-snippet="snippet_wl_wa_button">
             <a href="https://wa.me/6285854749767" target="_blank" rel="noopener" class="wa-float-btn" title="Chat WhatsApp">
@@ -73,7 +65,6 @@
         </div>
     </template>
 
-    <!-- Snippet Group Registration -->
     <template id="snippet_warunglakku_snippets" name="Warung Lakku Snippets" inherit_id="website.snippets">
         <xpath expr="//div[@id='snippet_content']" position="inside">
             <t t-snippet="theme_warunglakku.snippet_wl_hero_banner"/>
@@ -84,4 +75,5 @@
             <t t-snippet="theme_warunglakku.snippet_wl_wa_button"/>
         </xpath>
     </template>
+
 </odoo>
