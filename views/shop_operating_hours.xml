@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Warung Lakku: Shop Sidebar Operating Hours Widget
+        =================================================
+        The default `#products_grid_before` aside on /shop is empty
+        when no product attributes/categories are configured. Fill
+        it with an operating-hours card synced from Evolution API
+        (cached 24h in ir.config_parameter by the
+        website_sale_pickup_at_store module).
+
+        Data is computed server-side via website.get_warunglakku_operating_hours()
+        (see models/website_operating_hours.py) so the card renders
+        fully on first paint — no AJAX, no client-side JS.
+    -->
+    <record model="ir.ui.view" id="shop_operating_hours_sidebar">
+        <field name="name">Warung Lakku: Shop Sidebar Operating Hours</field>
+        <field name="key">theme_warunglakku.shop_operating_hours_sidebar</field>
+        <field name="type">qweb</field>
+        <field name="inherit_id" ref="website_sale.products"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//div[contains(@class, 'o_wsale_products_grid_before_rail')]/div[contains(@class, 'products_attributes_filters')]" position="before">
+                    <t t-set="oh" t-value="website.get_warunglakku_operating_hours()"/>
+                    <div class="wl_oh_card" t-att-data-available="'true' if oh.get('available') else 'false'">
+                        <div class="wl_oh_header">
+                            <i class="fa fa-clock-o"/>
+                            <span>Jam Operasional</span>
+                        </div>
+                        <t t-if="oh.get('available')">
+                            <div class="wl_oh_status" t-att-data-open="'true' if oh.get('is_open_now') else 'false'">
+                                <span class="wl_oh_dot"/>
+                                <t t-if="oh.get('is_open_now')">
+                                    <span class="wl_oh_status_text">Buka Sekarang</span>
+                                </t>
+                                <t t-else="">
+                                    <span class="wl_oh_status_text">Tutup</span>
+                                </t>
+                            </div>
+                            <ul class="wl_oh_days">
+                                <t t-foreach="oh.get('days', [])" t-as="day">
+                                    <li t-att-class="'wl_oh_day' + (' wl_oh_day_today' if day.get('is_today') else '') + (' wl_oh_day_open' if day.get('is_open') else '')">
+                                        <span class="wl_oh_day_name">
+                                            <t t-esc="day.get('name')"/>
+                                            <t t-if="day.get('is_today')">
+                                                <span class="wl_oh_today_badge">Hari ini</span>
+                                            </t>
+                                        </span>
+                                        <span class="wl_oh_day_hours" t-esc="day.get('hours_display')"/>
+                                    </li>
+                                </t>
+                            </ul>
+                            <div class="wl_oh_footer">
+                                <div class="wl_oh_sync">
+                                    <i class="fa fa-whatsapp"/>
+                                    <small>Disinkronkan dari WhatsApp Business</small>
+                                </div>
+                                <t t-if="oh.get('fetched_at')">
+                                    <small class="wl_oh_updated">
+                                        Diperbarui: <t t-esc="oh.get('fetched_at')"/>
+                                    </small>
+                                </t>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="wl_oh_empty">
+                                <i class="fa fa-info-circle"/>
+                                <span>Jam operasional belum tersedia.</span>
+                            </div>
+                        </t>
+                    </div>
+                </xpath>
+            </data>
+        </field>
+    </record>
+
+</odoo>
