@@ -162,32 +162,261 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // ============================================================
-// ODOO SHOP PRODUCT CARDS
+// ODOO SHOP PRODUCT CARDS — Comprehensive Redesign (v17.0.3.6.0)
+//
+// Goals:
+//   - Modern e-commerce card look (Tokopedia/Shopee inspired)
+//   - Clear visual hierarchy: image > title > price > CTA
+//   - Smooth hover effects (lift, image zoom, border shift)
+//   - Brand-colored accents (maroon primary, yellow hover)
+//   - Works for both grid and list views (.oe_product_cart is shared)
+//   - Responsive at 575.98px (mobile 2-col)
+//
+// All rules use !important (layer 2 force override) to win over
+// Odoo's default .o_wsale_product_item / .oe_product_cart styling.
 // ============================================================
-.o_wsale_product_item {
-    border-radius: 10px !important;
+
+// ---- CARD CONTAINER (.o_wsale_product_item / .oe_product_cart) ----
+// Include high-specificity selectors (.o_wsale_products_grid_table_wrapper .oe_product_cart)
+// to win over Odoo's default rules that target the same compound selector.
+.o_wsale_product_item,
+.oe_product_cart,
+.o_wsale_products_grid_table_wrapper .oe_product_cart {
+    border-radius: 14px !important;
     overflow: hidden !important;
-    box-shadow: var(--wl-shadow-card) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
     border: 1px solid rgba(0, 0, 0, 0.06) !important;
-    transition: all 0.2s ease !important;
+    background: #ffffff !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+    position: relative !important;
 
     &:hover {
-        transform: translateY(-3px) !important;
-        box-shadow: var(--wl-shadow-hover) !important;
+        transform: translateY(-4px) !important;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+        border-color: rgba(122, 12, 20, 0.25) !important;
+
+        // Image zoom on card hover
+        .oe_product_image_img_wrapper img {
+            transform: scale(1.08) !important;
+        }
+
+        // Title color shift on hover
+        .o_wsale_products_item_title a {
+            color: var(--wl-maroon, #7a0c14) !important;
+        }
+
+        // Add-to-cart button: subtle yellow icon hint
+        .wl_card_add_to_cart_btn {
+            background: var(--wl-maroon-dark, #5a080e) !important;
+
+            i.fa,
+            .fa {
+                color: var(--wl-yellow, #f5c400) !important;
+            }
+        }
     }
 }
 
-.o_wsale_product_price .oe_price {
-    color: var(--wl-maroon) !important;
-    font-weight: 700 !important;
-    font-family: 'Poppins', sans-serif !important;
+// ---- PRODUCT IMAGE AREA ----
+.oe_product_cart .oe_product_image,
+.oe_product_cart .oe_product_image_link {
+    background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%) !important;
+    overflow: hidden !important;
+    border-radius: 14px 14px 0 0 !important;
 }
 
+.oe_product_cart .oe_product_image_img_wrapper {
+    background: transparent !important;
+
+    img {
+        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        object-fit: contain !important;
+        // Slight padding so product images don't touch the card edges
+        padding: 8px !important;
+    }
+}
+
+// ---- PRODUCT INFORMATION (text + price + button container) ----
+.oe_product_cart .o_wsale_product_information,
+.o_wsale_products_grid_table_wrapper .o_wsale_product_information {
+    padding: 10px 12px 12px !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.04) !important;
+    background: #ffffff !important;
+}
+
+// ---- PRODUCT TITLE ----
+.oe_product_cart .o_wsale_products_item_title,
+.o_wsale_products_grid_table_wrapper .o_wsale_products_item_title {
+    margin-bottom: 8px !important;
+    line-height: 1.3 !important;
+
+    a {
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        color: var(--wl-text-main, #1f1f1f) !important;
+        text-decoration: none !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        min-height: 2.2em !important;
+        transition: color 0.2s ease !important;
+
+        &:hover {
+            color: var(--wl-maroon, #7a0c14) !important;
+            text-decoration: none !important;
+        }
+    }
+}
+
+// ---- PRICE ----
+.oe_product_cart .product_price .h6,
+.oe_product_cart .o_wsale_product_price .oe_price,
+.o_wsale_products_grid_table_wrapper .product_price .h6 {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: var(--wl-maroon, #7a0c14) !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.01em !important;
+}
+
+// Make the "Rp" prefix slightly smaller than the digits
+.oe_product_cart .product_price .h6,
+.o_wsale_products_grid_table_wrapper .product_price .h6 {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    gap: 2px !important;
+
+    &::first-letter {
+        font-size: 0.75em !important;
+        font-weight: 600 !important;
+        color: var(--wl-text-soft, #555) !important;
+    }
+}
+
+// ---- PRODUCT BADGE (e.g., "Sale", "New") ----
 .o_wsale_product_badge {
     background: var(--wl-maroon) !important;
+    color: #ffffff !important;
     border-radius: 6px !important;
     font-family: 'Poppins', sans-serif !important;
     font-weight: 600 !important;
+    font-size: 0.7rem !important;
+    padding: 3px 8px !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+}
+
+// ---- BOTTOM ROW (price + add-to-cart) ----
+.oe_product_cart .o_wsale_product_sub {
+    align-items: center !important;
+    gap: 8px !important;
+    margin-top: auto !important;
+}
+
+// ============================================================
+// ADD-TO-CART BUTTON ON PRODUCT CARD (v17.0.3.6.0 redesign)
+// The base website_sale.products_item form posts to /shop/cart/update
+// but there's no visible submit button. Inject a styled + button
+// via the .o_wsale_product_btn placeholder. The actual button
+// element is added by XML inheritance (views/shop_add_to_cart.xml).
+// ============================================================
+.oe_product_cart .wl_card_add_to_cart_btn,
+.oe_product_card .wl_card_add_to_cart_btn,
+.o_wsale_products_grid_table_wrapper .oe_product_cart .wl_card_add_to_cart_btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    height: 34px !important;
+    padding: 0 12px !important;
+    border-radius: 999px !important;  // pill shape (was 50% circle)
+    background: var(--wl-maroon, #7a0c14) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    box-shadow: 0 2px 8px rgba(122, 12, 20, 0.3) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+
+    &:hover {
+        background: var(--wl-maroon-dark, #5a080e) !important;
+        color: var(--wl-yellow, #f5c400) !important;
+        transform: scale(1.04) !important;
+        box-shadow: 0 4px 14px rgba(122, 12, 20, 0.4) !important;
+    }
+
+    &:active {
+        transform: scale(0.96) !important;
+    }
+
+    i.fa,
+    .fa {
+        margin: 0 !important;
+        font-size: 0.7rem !important;
+        transition: color 0.2s ease !important;
+    }
+}
+
+// Always show the "Keranjang" label (not just on mobile)
+.oe_product_cart .wl_card_add_to_cart_btn .wl_cart_label,
+.oe_product_card .wl_card_add_to_cart_btn .wl_cart_label,
+.o_wsale_products_grid_table_wrapper .wl_card_add_to_cart_btn .wl_cart_label {
+    display: inline !important;
+}
+
+// ============================================================
+// MOBILE PRODUCT CARDS (<575.98px) — tighter sizing for 2-col grid
+// ============================================================
+@media (max-width: 575.98px) {
+    .oe_product_cart .o_wsale_product_information,
+    .o_wsale_products_grid_table_wrapper .o_wsale_product_information {
+        padding: 7px 8px 9px !important;
+    }
+
+    .oe_product_cart .o_wsale_products_item_title a,
+    .o_wsale_products_grid_table_wrapper .o_wsale_products_item_title a {
+        font-size: 0.78rem !important;
+        min-height: 2em !important;
+    }
+
+    .oe_product_cart .product_price .h6,
+    .oe_product_cart .o_wsale_product_price .oe_price,
+    .o_wsale_products_grid_table_wrapper .product_price .h6 {
+        font-size: 0.85rem !important;
+    }
+
+    .oe_product_cart .wl_card_add_to_cart_btn,
+    .oe_product_card .wl_card_add_to_cart_btn,
+    .o_wsale_products_grid_table_wrapper .oe_product_cart .wl_card_add_to_cart_btn {
+        width: 100% !important;
+        height: 30px !important;
+        font-size: 0.7rem !important;
+        border-radius: 8px !important;
+        padding: 0 8px !important;
+        margin-top: 2px !important;
+    }
+
+    // Image area smaller on mobile
+    .oe_product_cart .oe_product_image,
+    .o_wsale_products_grid_table_wrapper .oe_product_image {
+        min-height: 140px !important;
+    }
+}
+
+// ============================================================
+// PRODUCT GRID TABLE — ensure cards fill their grid cells neatly
+// (The grid layout itself is set by the @media rules below for
+// 2-col mobile layout. This block just polishes card sizing.)
+// ============================================================
+.o_wsale_products_grid_table_wrapper .o_wsale_product_grid_wrapper {
+    min-height: 280px !important;
 }
 
 // ============================================================
@@ -496,25 +725,29 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     // Tighter padding + smaller fonts on mobile product cards
+    // (v3.6.0: kept border-radius at 14px to match desktop, padding
+    //  handled by the unified .oe_product_cart .o_wsale_product_information
+    //  rule above with mobile override at <575.98px.)
     .o_wsale_products_grid_table_wrapper .oe_product_cart {
-        border-radius: 10px !important;
+        border-radius: 14px !important;
         overflow: hidden !important;
     }
 
     .o_wsale_products_grid_table_wrapper .o_wsale_product_information {
-        padding: 6px 8px 8px !important;
+        padding: 7px 8px 9px !important;
     }
 
     .o_wsale_products_grid_table_wrapper .o_wsale_products_item_title {
         font-size: 0.78rem !important;
-        line-height: 1.2 !important;
-        margin-bottom: 4px !important;
+        line-height: 1.3 !important;
+        margin-bottom: 6px !important;
 
         a {
             display: -webkit-box !important;
             -webkit-line-clamp: 2 !important;
             -webkit-box-orient: vertical !important;
             overflow: hidden !important;
+            min-height: 2em !important;
         }
     }
 
@@ -524,69 +757,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // ============================================================
-// ADD-TO-CART BUTTON ON PRODUCT CARD (shop page)
-// The base website_sale.products_item form posts to /shop/cart/update
-// but there's no visible submit button. Inject a styled + button
-// via the .o_wsale_product_btn placeholder. The actual button
-// element is added by XML inheritance (views/shop_add_to_cart.xml).
-// Here we just style it.
+// (LEGACY ADD-TO-CART BUTTON RULES REMOVED in v17.0.3.6.0)
+// The button is now styled in the unified block above (search for
+// "ADD-TO-CART BUTTON ON PRODUCT CARD (v17.0.3.6.0 redesign)").
+// Old rules used 50% circle shape and hid the "Keranjang" label
+// on desktop. New design uses pill shape + always-visible label
+// for clearer call-to-action. The previous display:none rule
+// for .wl_cart_label has been removed to avoid conflict.
 // ============================================================
-.oe_product_cart .wl_card_add_to_cart_btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 36px !important;
-    height: 36px !important;
-    padding: 0 !important;
-    border-radius: 50% !important;
-    background: var(--wl-maroon, #7a0c14) !important;
-    color: #ffffff !important;
-    border: none !important;
-    font-size: 0.9rem !important;
-    line-height: 1 !important;
-    box-shadow: 0 2px 8px rgba(122, 12, 20, 0.3) !important;
-    transition: all 0.2s ease !important;
-    cursor: pointer !important;
-
-    &:hover {
-        background: var(--wl-maroon-dark, #5a080e) !important;
-        color: var(--wl-yellow, #f5c400) !important;
-        transform: scale(1.08) !important;
-        box-shadow: 0 4px 12px rgba(122, 12, 20, 0.4) !important;
-    }
-
-    &:active {
-        transform: scale(0.95) !important;
-    }
-
-    i.fa,
-    .fa {
-        margin: 0 !important;
-    }
-}
-
-// Mobile: make the add-to-cart button bigger + label visible
-@media (max-width: 575.98px) {
-    .oe_product_card .wl_card_add_to_cart_btn,
-    .oe_product_cart .wl_card_add_to_cart_btn {
-        width: 100% !important;
-        border-radius: 8px !important;
-        height: 32px !important;
-        font-size: 0.75rem !important;
-        margin-top: 4px !important;
-
-        // Show "+ Keranjang" label on mobile (the label is hidden by default)
-        .wl_cart_label {
-            display: inline !important;
-            margin-left: 4px !important;
-        }
-    }
-}
-
-// On desktop: hide the text label, show only the + icon (compact)
-.oe_product_cart .wl_card_add_to_cart_btn .wl_cart_label {
-    display: none;
-}
 
 // ============================================================
 // FOOTER MAP (v17.0.3.4.0)
