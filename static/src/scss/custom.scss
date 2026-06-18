@@ -1,298 +1,209 @@
 // ============================================================
 // Warung Lakku Theme — Custom Styles
-// BK Delivery-inspired: Clean, product-focused landing page
+// Fokus: Produk langsung, no hero, no promo
 // ============================================================
 
-// ---- Root CSS Variables ----
 :root {
-    --wl-primary: #{$o-theme-primary};
-    --wl-primary-dark: #FF8F00;
-    --wl-primary-light: #FFECB3;
-    --wl-secondary: #FF5722;
-    --wl-accent: #E91E63;
-    --wl-gradient-brand: linear-gradient(135deg, #FFC107, #FF8F00, #FF5722);
-    --wl-gradient-sunset: linear-gradient(135deg, #FF8F00, #FF5722, #E91E63);
-    --wl-gradient-golden: linear-gradient(135deg, #FFECB3, #FFC107);
-    --wl-gradient-hero: linear-gradient(135deg, #FFC107 0%, #FF8F00 40%, #FF5722 70%, #E91E63 100%);
-    --wl-shadow-glow: 0 0 20px rgba(255, 193, 7, 0.3);
+    --wl-maroon: #7a0c14;
+    --wl-maroon-dark: #5a080e;
+    --wl-yellow: #f5c400;
+    --wl-yellow-light: #ffd84d;
+    --wl-text-main: #1f1f1f;
+    --wl-text-soft: #555;
+    --wl-card-bg: #ffffff;
+    --wl-body-bg: #fafafa;
+    --wl-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --wl-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
-// ---- Body Typography ----
 body {
-    font-family: 'Inter', sans-serif !important;
-    background-color: #FFFDF7 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    background-color: var(--wl-body-bg) !important;
+    color: var(--wl-text-main) !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Poppins', sans-serif !important;
+    color: var(--wl-maroon-dark) !important;
 }
 
 // ============================================================
-// HERO BANNER — BK-style: Full-width gradient, minimal text
+// PRODUCTS SECTION — Grid product cards
 // ============================================================
-.wl-hero-banner {
-    position: relative;
-    width: 100%;
-    min-height: 420px;
-    overflow: hidden;
+.wl-products-section {
+    padding: 30px 0;
+    background-color: var(--wl-body-bg);
 
-    .wl-hero-inner {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        min-height: 420px;
-        background: var(--wl-gradient-hero);
-        padding: 60px 20px;
-    }
-
-    .wl-hero-content {
-        max-width: 700px;
-        z-index: 2;
-    }
-
-    .wl-hero-title {
-        font-family: 'Poppins', sans-serif !important;
-        font-size: 3.5rem;
-        font-weight: 800;
-        color: #fff;
-        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
-        margin-bottom: 12px;
-        line-height: 1.1;
-    }
-
-    .wl-hero-subtitle {
-        font-family: 'Inter', sans-serif !important;
-        font-size: 1.2rem;
-        color: rgba(255, 255, 255, 0.92);
-        margin-bottom: 28px;
-        font-weight: 400;
-    }
-
-    .wl-hero-cta {
-        display: inline-block;
-        background: #fff !important;
-        color: #FF8F00 !important;
-        font-family: 'Poppins', sans-serif !important;
-        font-weight: 700;
-        font-size: 1.1rem;
-        padding: 14px 40px;
-        border-radius: 50px;
-        text-decoration: none !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        transition: all 0.3s ease;
-
-        &:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-        }
-    }
-}
-
-// ============================================================
-// PROMO BAR — Singkat seperti BK Crown section
-// ============================================================
-.wl-promo-bar {
-    background: #FFF8E1;
-    padding: 18px 0;
-    border-bottom: 2px solid #FFECB3;
-
-    .wl-promo-inner {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-
-    .wl-promo-text {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-
-        .wl-promo-icon {
-            font-size: 1.5rem;
-        }
-
-        h3 {
-            font-family: 'Poppins', sans-serif !important;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #2D2D2D;
-            margin: 0;
-        }
-    }
-
-    .wl-promo-btn {
-        display: inline-block;
-        background: linear-gradient(135deg, #25D366, #128C7E);
-        color: #fff !important;
-        font-family: 'Poppins', sans-serif !important;
-        font-weight: 600;
-        font-size: 0.9rem;
-        padding: 10px 24px;
-        border-radius: 50px;
-        text-decoration: none !important;
-        transition: all 0.3s ease;
-
-        &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
-        }
-    }
-}
-
-// ============================================================
-// MENU SECTION — BK "Our Menus" style: 3-column category grid
-// ============================================================
-.wl-menu-section {
-    padding: 50px 0 70px;
-    background-color: #FFFDF7;
-
-    .wl-menu-title {
-        text-align: center;
-        font-family: 'Poppins', sans-serif !important;
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2D2D2D;
-        margin-bottom: 40px;
-    }
-
-    .wl-menu-grid {
+    .wl-products-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+
+        @media (max-width: 992px) {
+            grid-template-columns: repeat(3, 1fr);
+        }
 
         @media (max-width: 768px) {
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            gap: 12px;
         }
 
         @media (max-width: 480px) {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
     }
 
-    .wl-menu-card {
+    .wl-product-card {
         display: block;
-        background: #FFFFFF;
-        border-radius: 16px;
+        background: var(--wl-card-bg);
+        border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        border: 1px solid #f0f0f0;
+        box-shadow: var(--wl-shadow-card);
+        border: 1px solid rgba(0, 0, 0, 0.06);
         text-decoration: none !important;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
 
         &:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-            border-color: #FFC107;
+            transform: translateY(-3px);
+            box-shadow: var(--wl-shadow-hover);
+            border-color: var(--wl-yellow);
 
-            .wl-menu-img {
-                transform: scale(1.05);
+            .wl-product-img {
+                transform: scale(1.03);
             }
         }
     }
 
-    .wl-menu-img-wrapper {
+    .wl-product-img-wrapper {
+        position: relative;
         width: 100%;
-        aspect-ratio: 16/10;
+        aspect-ratio: 1/1;
         overflow: hidden;
-        background: linear-gradient(135deg, #FFECB3, #FFC107);
+        background: #f5f5f5;
     }
 
-    .wl-menu-img {
+    .wl-product-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.4s ease;
+        transition: transform 0.3s ease;
     }
 
-    .wl-menu-name {
+    .wl-product-info {
+        padding: 10px 12px;
+    }
+
+    .wl-product-name {
         font-family: 'Poppins', sans-serif !important;
-        font-size: 1.05rem;
+        font-size: 0.85rem;
         font-weight: 600;
-        color: #2D2D2D;
-        text-align: center;
-        padding: 16px 12px;
-        margin: 0;
+        color: var(--wl-text-main);
+        margin: 0 0 6px 0;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .wl-product-price {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .wl-price-amount {
+        font-family: 'Poppins', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--wl-maroon);
+    }
+
+    .wl-price-compare {
+        font-size: 0.75rem;
+        color: #999;
+        text-decoration: line-through;
     }
 }
 
 // ============================================================
-// BUTTONS — Brand Gradient (Global Override)
+// BUTTONS
 // ============================================================
 .btn-primary {
-    background: linear-gradient(135deg, #FFC107, #FF8F00, #FF5722) !important;
-    background-size: 200% 200% !important;
+    background: var(--wl-maroon) !important;
     border: none !important;
-    border-radius: 50px !important;
+    border-radius: 8px !important;
     font-family: 'Poppins', sans-serif !important;
     font-weight: 600 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(122, 12, 20, 0.2) !important;
+    transition: all 0.2s ease !important;
 
     &:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), var(--wl-shadow-glow) !important;
-    }
-
-    &:active {
-        transform: translateY(0) !important;
+        background: var(--wl-maroon-dark) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(122, 12, 20, 0.25) !important;
     }
 }
 
 .btn-secondary {
     background: transparent !important;
-    border: 2px solid var(--wl-primary) !important;
-    border-radius: 50px !important;
-    color: var(--wl-primary-dark) !important;
+    border: 2px solid var(--wl-maroon) !important;
+    border-radius: 8px !important;
+    color: var(--wl-maroon) !important;
     font-family: 'Poppins', sans-serif !important;
     font-weight: 600 !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
 
     &:hover {
-        background: var(--wl-primary) !important;
+        background: var(--wl-maroon) !important;
         color: #fff !important;
-        border-color: var(--wl-primary) !important;
     }
 }
 
 // ============================================================
-// PRODUCT CARDS (Odoo Shop) — Match menu card style
+// ODOO SHOP PRODUCT CARDS
 // ============================================================
 .o_wsale_product_item {
-    border-radius: 16px !important;
+    border-radius: 10px !important;
     overflow: hidden !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-    border: 1px solid #f0f0f0 !important;
-    transition: all 0.3s ease !important;
+    box-shadow: var(--wl-shadow-card) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    transition: all 0.2s ease !important;
 
     &:hover {
-        transform: translateY(-5px) !important;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: var(--wl-shadow-hover) !important;
     }
 }
 
 .o_wsale_product_price .oe_price {
-    color: #FF8F00 !important;
+    color: var(--wl-maroon) !important;
     font-weight: 700 !important;
     font-family: 'Poppins', sans-serif !important;
 }
 
 .o_wsale_product_badge {
-    background: linear-gradient(135deg, #FFC107, #FF8F00, #FF5722) !important;
-    border-radius: 50px !important;
+    background: var(--wl-maroon) !important;
+    border-radius: 6px !important;
     font-family: 'Poppins', sans-serif !important;
     font-weight: 600 !important;
 }
 
 // ============================================================
-// FOOTER — Gradient top border
+// FOOTER
 // ============================================================
 .o_footer {
-    border-top: 4px solid !important;
-    border-image: linear-gradient(135deg, #FFC107, #FF8F00, #FF5722) 1 !important;
+    background: var(--wl-maroon-dark) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+
+    a {
+        color: var(--wl-yellow) !important;
+
+        &:hover {
+            color: var(--wl-yellow-light) !important;
+        }
+    }
 }
 
 // ============================================================
@@ -302,27 +213,24 @@ h1, h2, h3, h4, h5, h6 {
     width: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #FFFDF7;
+    background: #f5f5f5;
 }
 ::-webkit-scrollbar-thumb {
-    background: #FFC107;
-    border-radius: 9999px;
+    background: var(--wl-maroon);
+    border-radius: 4px;
 
     &:hover {
-        background: #FF8F00;
+        background: var(--wl-maroon-dark);
     }
 }
 
-// ============================================================
-// SELECTION
-// ============================================================
 ::selection {
-    background: rgba(255, 193, 7, 0.3);
-    color: #2D2D2D;
+    background: rgba(245, 196, 0, 0.3);
+    color: var(--wl-text-main);
 }
 
 // ============================================================
-// WHATSAPP FLOAT BUTTON
+// WHATSAPP FLOAT
 // ============================================================
 .wa-float-btn {
     position: fixed !important;
@@ -337,9 +245,8 @@ h1, h2, h3, h4, h5, h6 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-size: 28px !important;
     box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4) !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
     text-decoration: none !important;
 
     &:hover {
@@ -349,7 +256,6 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-// Pulse animation for WA button
 .wl-pulse {
     animation: wl-pulse-anim 2s infinite;
 }
@@ -361,7 +267,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // ============================================================
-// HEADER SCROLL EFFECT
+// HEADER SCROLL
 // ============================================================
 .wl-header-scrolled {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
@@ -369,42 +275,214 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // ============================================================
-// RESPONSIVE
+// MOBILE NAVBAR / HAMBURGER MENU FIX
+// Issue: hamburger menu items appear with white text on white
+// background when the menu is open on mobile. Force dark text
+// color + white background for the collapse container on mobile.
+// Also fix the search box placeholder contrast.
 // ============================================================
-@media (max-width: 768px) {
-    .wl-hero-banner {
-        .wl-hero-inner {
-            min-height: 300px;
-            padding: 40px 20px;
-        }
 
-        .wl-hero-title {
-            font-size: 2.2rem;
-        }
+@media (max-width: 991.98px) {
+    // Force the collapse container to a solid white background so
+    // any inherited transparent/dark bg from the navbar doesn't
+    // bleed through.
+    .navbar-collapse {
+        background-color: #ffffff !important;
+        padding: 12px 16px !important;
+        margin-top: 8px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    }
 
-        .wl-hero-subtitle {
-            font-size: 1rem;
-        }
+    // All menu items inside the collapse: dark text so it's readable
+    .navbar-collapse .nav-link,
+    .navbar-collapse .dropdown-item,
+    .navbar-collapse menuitem,
+    .navbar-collapse .o_menu_sign_in > a,
+    .navbar-collapse a {
+        color: var(--wl-text-main, #1f1f1f) !important;
+        font-weight: 500 !important;
+        padding: 10px 12px !important;
+        border-radius: 6px !important;
+        transition: background-color 0.15s ease;
 
-        .wl-hero-cta {
-            padding: 12px 28px;
-            font-size: 1rem;
+        &:hover {
+            background-color: rgba(122, 12, 20, 0.06) !important;
+            color: var(--wl-maroon, #7a0c14) !important;
         }
     }
 
-    .wl-promo-bar {
-        .wl-promo-inner {
-            flex-direction: column;
-            gap: 12px;
+    // The "Hubungi Kami" CTA button in the mobile menu — keep yellow bg
+    .navbar-collapse .btn-warning,
+    .navbar-collapse .btn-primary {
+        background: var(--wl-yellow, #f5c400) !important;
+        color: var(--wl-text-main, #1f1f1f) !important;
+        border: none !important;
+        font-weight: 600 !important;
+        margin-top: 8px !important;
+    }
+
+    // Search box inside collapse: ensure placeholder + input text are dark
+    .navbar-collapse input[type="search"],
+    .navbar-collapse input[type="text"],
+    .navbar-collapse .o_searchbar_form input {
+        color: var(--wl-text-main, #1f1f1f) !important;
+        background-color: #f5f5f5 !important;
+        border: 1px solid #e5e5e5 !important;
+        border-radius: 6px !important;
+        padding: 8px 12px !important;
+
+        &::placeholder {
+            color: #666 !important;
+            opacity: 1 !important;
+        }
+
+        &:focus {
+            border-color: var(--wl-maroon, #7a0c14) !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(122, 12, 20, 0.1) !important;
         }
     }
 
-    .wl-menu-section {
-        padding: 30px 0 50px;
+    // Hamburger toggle button itself — keep visible on dark header bg
+    .navbar-toggler {
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.5) !important;
 
-        .wl-menu-title {
-            font-size: 1.5rem;
-            margin-bottom: 24px;
+        &:focus {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25) !important;
         }
     }
 }
+
+// ============================================================
+// MOBILE SHOP PRODUCT GRID — Force 2 columns on small screens
+// Issue: default Odoo shop uses <table> layout that collapses
+// to 1 column on mobile. Convert to 2-col grid via CSS.
+// ============================================================
+
+@media (max-width: 575.98px) {
+    // Convert the product table to a 2-column grid layout on mobile
+    .o_wsale_products_grid_table_wrapper table,
+    .o_wsale_products_grid_table_wrapper tbody {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    // Each row in the table becomes a grid item container — flatten it
+    .o_wsale_products_grid_table_wrapper tr {
+        display: contents !important;
+    }
+
+    // Each product cell takes 1 column (not full row)
+    .o_wsale_products_grid_table_wrapper td.oe_product {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+        // Override any colspan/rowspan that breaks the 2-col grid
+        grid-column: auto !important;
+        grid-row: auto !important;
+    }
+
+    // Make product card fill its grid cell neatly
+    .o_wsale_products_grid_table_wrapper .o_wsale_product_grid_wrapper {
+        height: 100% !important;
+        min-height: 280px !important;
+    }
+
+    // Tighter padding + smaller fonts on mobile product cards
+    .o_wsale_products_grid_table_wrapper .oe_product_cart {
+        border-radius: 10px !important;
+        overflow: hidden !important;
+    }
+
+    .o_wsale_products_grid_table_wrapper .o_wsale_product_information {
+        padding: 6px 8px 8px !important;
+    }
+
+    .o_wsale_products_grid_table_wrapper .o_wsale_products_item_title {
+        font-size: 0.78rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 4px !important;
+
+        a {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+        }
+    }
+
+    .o_wsale_products_grid_table_wrapper .product_price .h6 {
+        font-size: 0.85rem !important;
+    }
+}
+
+// ============================================================
+// ADD-TO-CART BUTTON ON PRODUCT CARD (shop page)
+// The base website_sale.products_item form posts to /shop/cart/update
+// but there's no visible submit button. Inject a styled + button
+// via the .o_wsale_product_btn placeholder. The actual button
+// element is added by XML inheritance (views/shop_add_to_cart.xml).
+// Here we just style it.
+// ============================================================
+.oe_product_cart .wl_card_add_to_cart_btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: var(--wl-maroon, #7a0c14) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+    line-height: 1 !important;
+    box-shadow: 0 2px 8px rgba(122, 12, 20, 0.3) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+
+    &:hover {
+        background: var(--wl-maroon-dark, #5a080e) !important;
+        color: var(--wl-yellow, #f5c400) !important;
+        transform: scale(1.08) !important;
+        box-shadow: 0 4px 12px rgba(122, 12, 20, 0.4) !important;
+    }
+
+    &:active {
+        transform: scale(0.95) !important;
+    }
+
+    i.fa,
+    .fa {
+        margin: 0 !important;
+    }
+}
+
+// Mobile: make the add-to-cart button bigger + label visible
+@media (max-width: 575.98px) {
+    .oe_product_card .wl_card_add_to_cart_btn,
+    .oe_product_cart .wl_card_add_to_cart_btn {
+        width: 100% !important;
+        border-radius: 8px !important;
+        height: 32px !important;
+        font-size: 0.75rem !important;
+        margin-top: 4px !important;
+
+        // Show "+ Keranjang" label on mobile (the label is hidden by default)
+        .wl_cart_label {
+            display: inline !important;
+            margin-left: 4px !important;
+        }
+    }
+}
+
+// On desktop: hide the text label, show only the + icon (compact)
+.oe_product_cart .wl_card_add_to_cart_btn .wl_cart_label {
+    display: none;
+}
+

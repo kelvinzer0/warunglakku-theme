@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Inject an "Add to Cart" button directly on each product card
+        in the /shop grid so the customer can add to cart without
+        opening the product detail page first.
+
+        The base website_sale.products_item template renders a <form>
+        that already posts to /shop/cart/update with csrf_token +
+        product_template_id. We just need to inject a visible submit
+        button into the empty .o_wsale_product_btn placeholder div
+        (currently empty in the base template).
+
+        Clicking the + button submits the form → adds 1 unit of the
+        product to the cart → redirects to /shop/cart. The product
+        image link still works (separate <a> tag, type="button" on
+        our submit prevents it from hijacking the form submit).
+
+        Strategy: use position="inside" on .o_wsale_product_btn so
+        we APPEND our button into that empty placeholder div.
+    -->
+    <template id="wl_products_item_add_to_cart"
+              name="WL: Add to Cart button on product card"
+              inherit_id="website_sale.products_item">
+        <xpath expr="//div[hasclass('o_wsale_product_btn')]" position="inside">
+            <button type="submit"
+                    class="btn wl_card_add_to_cart_btn"
+                    name="add_qty"
+                    value="1"
+                    title="Tambahkan ke Keranjang"
+                    aria-label="Tambahkan ke Keranjang">
+                <i class="fa fa-plus"></i>
+                <span class="wl_cart_label">Keranjang</span>
+            </button>
+            <!-- Hidden input so /shop/cart/update receives add_qty=1
+                 even though some Odoo versions look for it as a field. -->
+            <input type="hidden" name="add_qty" value="1"/>
+        </xpath>
+    </template>
+</odoo>
