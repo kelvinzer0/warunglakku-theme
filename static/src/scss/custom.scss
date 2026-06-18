@@ -620,4 +620,513 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500 !important;
 }
 
+// ============================================================
+// SHOP PRODUCTS HEADER — Toolbar redesign (v17.0.3.5.0)
+//
+// Issue: the default .products_header (search + sort dropdown +
+// grid/list toggle + mobile filters button) uses Bootstrap's
+// .btn-light styling, which renders as flat gray rectangles
+// with no visual hierarchy. On a brand-themed site this looks
+// generic and unprofessional.
+//
+// Strategy: layer-2 force override via !important (same approach
+// used for the offcanvas mobile menu fix in v3.2.0). We style
+// each child element of .products_header independently so the
+// redesign works whether or not Odoo's default classes are
+// applied. The toolbar keeps its flex layout (set by Bootstrap's
+// .btn-toolbar) but each piece gets the Warung Lakku look:
+//
+//   - Search bar: pill-shaped, white bg, subtle border, maroon
+//     accent on focus with glow ring.
+//   - Sort dropdown: pill button, white bg, maroon text, chevron
+//     icon, maroon-on-hover.
+//   - Grid/List toggle: clean segment-control style with maroon
+//     active state (white icon on maroon bg).
+//   - Mobile filters button: same pill style as sort.
+//
+// All styles are responsive: on mobile (<992px) the search takes
+// full width, sort collapses to icon-only, layout toggle stays
+// visible. The offcanvas trigger button (mobile filters) stays
+// visible only on <992px (controlled by Bootstrap's d-lg-none).
+// ============================================================
+
+.products_header {
+    // Container: add subtle padding + bottom border so the toolbar
+    // visually separates from the product grid below.
+    padding: 12px 14px !important;
+    margin-bottom: 20px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+    gap: 10px !important;
+
+    // ========================================================
+    // SEARCH BAR
+    // ========================================================
+    .o_searchbar_form,
+    .o_wsale_products_searchbar_form {
+        flex-grow: 1 !important;
+        margin-right: auto !important;
+
+        .input-group {
+            // Pill shape: high border-radius so the search looks
+            // like a modern search field, not a Bootstrap rectangle.
+            border-radius: 999px !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+            border: 1.5px solid #e5e5e5 !important;
+            box-shadow: none !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+
+            &:focus-within {
+                border-color: var(--wl-maroon, #7a0c14) !important;
+                box-shadow: 0 0 0 4px rgba(122, 12, 20, 0.10) !important;
+            }
+        }
+
+        .search-query,
+        .oe_search_box {
+            border: 0 !important;
+            background: transparent !important;
+            border-radius: 999px 0 0 999px !important;
+            padding: 8px 18px !important;
+            height: 42px !important;
+            font-size: 0.92rem !important;
+            font-family: 'Inter', sans-serif !important;
+            color: var(--wl-text-main, #1f1f1f) !important;
+            box-shadow: none !important;
+
+            &::placeholder {
+                color: #999 !important;
+                opacity: 1 !important;
+                font-weight: 400 !important;
+            }
+
+            &:focus {
+                outline: none !important;
+                box-shadow: none !important;
+            }
+        }
+
+        .oe_search_button {
+            background: var(--wl-maroon, #7a0c14) !important;
+            color: #ffffff !important;
+            border: 0 !important;
+            border-radius: 0 999px 999px 0 !important;
+            padding: 0 18px !important;
+            height: 42px !important;
+            font-size: 0.95rem !important;
+            transition: background-color 0.2s ease !important;
+
+            &:hover {
+                background: var(--wl-maroon-dark, #5a080e) !important;
+                color: var(--wl-yellow, #f5c400) !important;
+            }
+
+            i.fa,
+            i.oi {
+                font-size: 1rem !important;
+            }
+        }
+    }
+
+    // ========================================================
+    // SORT BY DROPDOWN
+    // ========================================================
+    .o_sortby_dropdown {
+        margin-right: auto !important;
+
+        .text-muted {
+            // "Sortir Berdasarkan:" label
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 0.78rem !important;
+            font-weight: 500 !important;
+            color: #888 !important;
+            margin-right: 6px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.04em !important;
+        }
+
+        .dropdown-toggle {
+            background: #ffffff !important;
+            color: var(--wl-maroon, #7a0c14) !important;
+            border: 1.5px solid #e5e5e5 !important;
+            border-radius: 999px !important;
+            padding: 8px 16px !important;
+            height: 42px !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            transition: all 0.2s ease !important;
+            box-shadow: none !important;
+
+            &::after {
+                // Replace default caret with a subtler chevron
+                border: 0 !important;
+                content: '\f078' !important;
+                font-family: 'FontAwesome' !important;
+                font-size: 0.65rem !important;
+                color: var(--wl-maroon, #7a0c14) !important;
+                margin-left: 4px !important;
+            }
+
+            &:hover {
+                border-color: var(--wl-maroon, #7a0c14) !important;
+                background: rgba(122, 12, 20, 0.04) !important;
+                color: var(--wl-maroon-dark, #5a080e) !important;
+            }
+
+            &.show {
+                border-color: var(--wl-maroon, #7a0c14) !important;
+                background: rgba(122, 12, 20, 0.06) !important;
+            }
+        }
+
+        .dropdown-menu {
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+            padding: 6px !important;
+            margin-top: 6px !important;
+
+            .dropdown-item {
+                font-family: 'Inter', sans-serif !important;
+                font-size: 0.88rem !important;
+                color: var(--wl-text-main, #1f1f1f) !important;
+                padding: 8px 14px !important;
+                border-radius: 8px !important;
+                transition: all 0.15s ease !important;
+
+                &:hover,
+                &:focus {
+                    background: rgba(122, 12, 20, 0.06) !important;
+                    color: var(--wl-maroon, #7a0c14) !important;
+                }
+            }
+        }
+    }
+
+    // ========================================================
+    // PRICELIST DROPDOWN (hidden by default, kept for compat)
+    // ========================================================
+    .o_pricelist_dropdown .dropdown-toggle {
+        background: #ffffff !important;
+        border: 1.5px solid #e5e5e5 !important;
+        border-radius: 999px !important;
+        height: 42px !important;
+    }
+
+    // ========================================================
+    // GRID / LIST LAYOUT TOGGLE — segment control
+    // ========================================================
+    .o_wsale_apply_layout {
+        background: #ffffff !important;
+        border: 1.5px solid #e5e5e5 !important;
+        border-radius: 999px !important;
+        padding: 3px !important;
+        height: 42px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        box-shadow: none !important;
+
+        input.btn-check:checked + label {
+            background: var(--wl-maroon, #7a0c14) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 6px rgba(122, 12, 20, 0.25) !important;
+        }
+
+        label {
+            background: transparent !important;
+            color: #888 !important;
+            border: 0 !important;
+            border-radius: 999px !important;
+            padding: 0 14px !important;
+            height: 34px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.95rem !important;
+            cursor: pointer !important;
+            transition: all 0.18s ease !important;
+            box-shadow: none !important;
+
+            &:hover {
+                color: var(--wl-maroon, #7a0c14) !important;
+                background: rgba(122, 12, 20, 0.05) !important;
+            }
+
+            i.fa,
+            i.oi {
+                font-size: 0.95rem !important;
+            }
+        }
+    }
+
+    // ========================================================
+    // MOBILE FILTERS BUTTON (offcanvas trigger, <992px only)
+    // ========================================================
+    button[data-bs-target='#o_wsale_offcanvas'] {
+        background: #ffffff !important;
+        color: var(--wl-maroon, #7a0c14) !important;
+        border: 1.5px solid #e5e5e5 !important;
+        border-radius: 999px !important;
+        padding: 0 16px !important;
+        height: 42px !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        transition: all 0.2s ease !important;
+        box-shadow: none !important;
+
+        &:hover {
+            border-color: var(--wl-maroon, #7a0c14) !important;
+            background: rgba(122, 12, 20, 0.04) !important;
+        }
+
+        i.fa {
+            font-size: 0.95rem !important;
+        }
+    }
+}
+
+// ============================================================
+// Responsive: on small screens, simplify the products_header
+// so the search bar takes full width on its own row and the
+// controls wrap neatly below it.
+// ============================================================
+@media (max-width: 991.98px) {
+    .products_header {
+        flex-wrap: wrap !important;
+
+        .o_searchbar_form,
+        .o_wsale_products_searchbar_form {
+            flex: 1 1 100% !important;
+            margin: 0 0 6px 0 !important;
+            width: 100% !important;
+
+            .input-group {
+                width: 100% !important;
+            }
+        }
+
+        .o_sortby_dropdown {
+            margin-right: auto !important;
+
+            .text-muted {
+                display: none !important;
+            }
+
+            .dropdown-toggle {
+                padding: 8px 14px !important;
+                font-size: 0.78rem !important;
+            }
+        }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .products_header {
+        padding: 10px !important;
+        gap: 8px !important;
+        border-radius: 12px !important;
+
+        .o_sortby_dropdown .dropdown-toggle {
+            padding: 8px 12px !important;
+            font-size: 0.75rem !important;
+        }
+
+        .o_wsale_apply_layout label {
+            padding: 0 10px !important;
+            height: 30px !important;
+        }
+
+        button[data-bs-target='#o_wsale_offcanvas'] {
+            padding: 0 12px !important;
+            font-size: 0.75rem !important;
+            height: 38px !important;
+        }
+
+        .o_searchbar_form .search-query,
+        .o_searchbar_form .oe_search_box,
+        .o_searchbar_form .oe_search_button {
+            height: 38px !important;
+        }
+    }
+}
+
+// ============================================================
+// PRIVACY POLICY PAGE (v17.0.3.5.0)
+// Style the /privacy page rendered by views/privacy_policy.xml.
+// ============================================================
+.wl-privacy-hero {
+    background: linear-gradient(135deg, #fafafa 0%, #f5f0eb 100%) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+
+    .wl-privacy-breadcrumb {
+        .breadcrumb {
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.82rem !important;
+
+            a {
+                color: var(--wl-maroon, #7a0c14) !important;
+                text-decoration: none !important;
+
+                &:hover {
+                    color: var(--wl-maroon-dark, #5a080e) !important;
+                    text-decoration: underline !important;
+                }
+            }
+
+            .breadcrumb-item.active {
+                color: #888 !important;
+            }
+
+            .breadcrumb-item + .breadcrumb-item::before {
+                content: '/' !important;
+                color: #ccc !important;
+            }
+        }
+    }
+
+    .wl-privacy-title {
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 2.2rem !important;
+        font-weight: 700 !important;
+        color: var(--wl-maroon-dark, #5a080e) !important;
+        line-height: 1.15 !important;
+        margin-bottom: 8px !important;
+    }
+
+    .wl-privacy-meta {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.85rem !important;
+        color: #888 !important;
+    }
+}
+
+.wl-privacy-content {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--wl-text-main, #1f1f1f) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.7 !important;
+
+    .wl-privacy-h2 {
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 1.35rem !important;
+        font-weight: 700 !important;
+        color: var(--wl-maroon-dark, #5a080e) !important;
+        margin-top: 2.2rem !important;
+        margin-bottom: 0.8rem !important;
+        padding-bottom: 0.4rem !important;
+        border-bottom: 2px solid rgba(122, 12, 20, 0.12) !important;
+    }
+
+    p {
+        margin-bottom: 1rem !important;
+    }
+
+    a {
+        color: var(--wl-maroon, #7a0c14) !important;
+        text-decoration: underline !important;
+        text-underline-offset: 2px !important;
+
+        &:hover {
+            color: var(--wl-maroon-dark, #5a080e) !important;
+            text-decoration-thickness: 2px !important;
+        }
+    }
+
+    code {
+        background: rgba(122, 12, 20, 0.06) !important;
+        color: var(--wl-maroon, #7a0c14) !important;
+        padding: 2px 6px !important;
+        border-radius: 4px !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 0.88em !important;
+    }
+
+    strong {
+        color: var(--wl-maroon-dark, #5a080e) !important;
+        font-weight: 600 !important;
+    }
+
+    .wl-privacy-list {
+        padding-left: 1.4rem !important;
+        margin-bottom: 1rem !important;
+
+        li {
+            margin-bottom: 0.5rem !important;
+            line-height: 1.65 !important;
+
+            &::marker {
+                color: var(--wl-maroon, #7a0c14) !important;
+                font-weight: 700 !important;
+            }
+        }
+    }
+
+    .wl-privacy-no li::marker {
+        content: '✕ ' !important;
+        color: #c0392b !important;
+    }
+
+    .wl-privacy-contact-card {
+        background: #fafafa !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        border-left: 4px solid var(--wl-maroon, #7a0c14) !important;
+        border-radius: 10px !important;
+        padding: 18px 22px !important;
+        margin-top: 1rem !important;
+
+        p {
+            margin-bottom: 0.6rem !important;
+            font-size: 0.92rem !important;
+
+            &:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        i.fa {
+            color: var(--wl-maroon, #7a0c14) !important;
+            width: 22px !important;
+            text-align: center !important;
+        }
+    }
+
+    .wl-privacy-footer-note {
+        font-size: 0.78rem !important;
+        font-style: italic !important;
+        color: #aaa !important;
+        border-top: 1px dashed #e5e5e5 !important;
+        padding-top: 1rem !important;
+        margin-top: 1.5rem !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .wl-privacy-hero .wl-privacy-title {
+        font-size: 1.6rem !important;
+    }
+    .wl-privacy-content {
+        font-size: 0.9rem !important;
+
+        .wl-privacy-h2 {
+            font-size: 1.15rem !important;
+        }
+    }
+}
+
+
 

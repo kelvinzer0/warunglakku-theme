@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Custom footer for Warung Lakku (theme_warunglakku v17.0.3.4.0).
+        Custom footer for Warung Lakku (theme_warunglakku v17.0.3.5.0).
 
         Original footer was rendered by website.footer_custom (id=1237,
         Indonesian version) inheriting from website.layout. The base
@@ -10,25 +10,29 @@
           col-lg-5  "Tentang kami"       (about us)
           col-lg-4  "Connect with us"    (contact info + social media)
 
-        User requested changes:
+        v3.4.0 changes (previous version):
           1. "Connect with us" → "Kontak kami" (heading translation fix)
           2. info@yourcompany.example.com → hello@warunglakku.com
           3. +1 555-555-5556 → +62 857-3355-6953
           4. "Tentang kami" section → "Alamat kami" section with
              store address + GPS coordinates + embedded OpenStreetMap
 
+        v3.5.0 changes (this version):
+          5. Removed tel:+6285733556953 link — Warung Lakku only supports
+             WhatsApp communication, not voice calls. The phone <li> has
+             been deleted; only the WhatsApp (wa.me) link remains.
+          6. Updated WhatsApp link label to "+62 857-3355-6953 (WhatsApp)"
+             to make the channel explicit.
+          7. Added "Kebijakan Privasi" link to /privacy page (created by
+             views/privacy_policy.xml).
+
         Strategy: inherit website.footer_custom with priority=99 and
         position="replace" on the #footer div. This fully replaces
         the inherited footer content with our own 3-column layout.
 
-        Map approach: use OpenStreetMap (no API key needed, works
-        in Indonesia). Two layers:
-          - Static map image: https://staticmap.openstreetmap.de/staticmap.php?center=LAT,LON&zoom=15&size=600x300&markers=LAT,LON,red-pushpin
-            Rendered as <img> so it loads even without JS / cookies.
-          - Click-through link to https://www.openstreetmap.org/?mlat=LAT&mlon=LON#map=15/LAT/LON
-            Opens full interactive map in new tab.
-          - "Buka di Google Maps" link below using geo: URI (works on
-            mobile, opens native Google Maps / Waze app).
+        Map approach: use OpenStreetMap embed iframe (no API key needed,
+        works in Indonesia). The iframe is interactive — users can
+        pan/zoom and click the marker.
 
         Coordinates for Binangun, Blitar, Jawa Timur, Indonesia:
           LAT = -8.2340141
@@ -121,16 +125,10 @@
                                         <span><a href="mailto:hello@warunglakku.com">hello@warunglakku.com</a></span>
                                     </li>
                                     <li>
-                                        <i class="fa fa-phone fa-fw me-2"/>
-                                        <span class="o_force_ltr">
-                                            <a href="tel:+6285733556953">+62 857-3355-6953</a>
-                                        </span>
-                                    </li>
-                                    <li>
                                         <i class="fa fa-whatsapp fa-fw me-2"/>
                                         <span>
                                             <a href="https://wa.me/6285733556953"
-                                               target="_blank" rel="noopener">+62 857-3355-6953</a>
+                                               target="_blank" rel="noopener">+62 857-3355-6953 (WhatsApp)</a>
                                         </span>
                                     </li>
                                 </ul>

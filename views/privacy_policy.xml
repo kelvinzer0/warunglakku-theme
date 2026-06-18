@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Privacy Policy page for Warung Lakku (theme_warunglakku v17.0.3.5.0).
+
+        User requested a dedicated Kebijakan Privasi page reachable from
+        the footer link "/privacy" (added in footer_custom.xml v3.4.0).
+
+        Strategy:
+          1. Define an ir.ui.view (key=theme_warunglakku.privacy_policy_page)
+             carrying the page body (QWeb + HTML). Uses website.layout
+             so the standard header/footer wrap the content.
+          2. Define a website.page record that binds URL /privacy to
+             that view. website.page is the canonical Odoo mechanism
+             for static theme-delivered pages (e.g. /privacy, /terms,
+             /about-us). It is auto-published (website_published=True)
+             so the public can reach it without login.
+          3. Content is written in Bahasa Indonesia, scoped to the
+             actual data we collect on this site:
+                - Nama Lengkap, Nomor WhatsApp, Alamat, Koordinat GPS
+                  (the 4 visible fields on the simplified checkout)
+                - Auto-generated email (wa_<phone>@warunglakku.com)
+                - Auto-locked: Kota=Blitar, Kode Pos=01, Negara=Indonesia,
+                  Provinsi=Jawa Timur (locked to the merchant's service area)
+                - Order history (sale.order lines)
+                - Optional: cookies set by Odoo website module
+             The policy explicitly mentions that WhatsApp is the only
+             communication channel (no phone calls) — consistent with
+             the footer that no longer shows a tel: link as of v3.5.0.
+
+        Implementation note (v3.5.0): use explicit <record> for the
+        ir.ui.view with explicit <field name="key"> instead of <template>
+        tag. The <template> tag was failing during module upgrade with
+        "Invalid key: QWeb view should have a key" — the explicit key
+        field avoids that error.
+    -->
+
+    <!-- ============================================================ -->
+    <!-- Page body view (QWeb)                                         -->
+    <!-- ============================================================ -->
+    <record id="privacy_policy_page" model="ir.ui.view">
+        <field name="name">WL: Kebijakan Privasi</field>
+        <field name="key">theme_warunglakku.privacy_policy_page</field>
+        <field name="type">qweb</field>
+        <field name="arch" type="xml">
+            <t t-name="theme_warunglakku.privacy_policy_page">
+                <t t-call="website.layout">
+                    <div id="wrap" class="oe_structure oe_empty">
+                        <section class="wl-privacy-hero s_text_block pt-5 pb-4">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-lg-10 offset-lg-1">
+                                        <nav aria-label="breadcrumb" class="wl-privacy-breadcrumb">
+                                            <ol class="breadcrumb mb-3">
+                                                <li class="breadcrumb-item">
+                                                    <a href="/">Beranda</a>
+                                                </li>
+                                                <li class="breadcrumb-item active" aria-current="page">
+                                                    Kebijakan Privasi
+                                                </li>
+                                            </ol>
+                                        </nav>
+                                        <h1 class="wl-privacy-title mb-2">
+                                            Kebijakan Privasi
+                                        </h1>
+                                        <p class="wl-privacy-meta text-muted mb-0">
+                                            <i class="fa fa-clock-o me-1"/>
+                                            Terakhir diperbarui: 18 Juni 2026
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="s_text_block pb-5">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-lg-10 offset-lg-1 wl-privacy-content">
+
+                                        <!-- Pendahuluan -->
+                                        <h2 class="wl-privacy-h2">1. Pendahuluan</h2>
+                                        <p>
+                                            Warung Lakku ("kami", "penyedia layanan") berkomitmen melindungi
+                                            privasi pelanggan ("Anda") yang menggunakan situs web kami di
+                                            <a href="https://odoo.warunglakku.com">https://odoo.warunglakku.com</a>.
+                                            Kebijakan Privasi ini menjelaskan informasi apa yang kami kumpulkan
+                                            saat Anda mendaftar, memesan, atau menghubungi kami melalui situs ini,
+                                            bagaimana informasi tersebut digunakan, dan hak-hak Anda atas data
+                                            pribadi tersebut.
+                                        </p>
+                                        <p>
+                                            Dengan melanjutkan penggunaan situs ini, Anda menyetujui praktik
+                                            yang diuraikan dalam kebijakan ini. Jika Anda tidak setuju dengan
+                                            kebijakan ini, mohon untuk tidak menggunakan layanan kami. Kebijakan
+                                            ini disusun mengacu pada prinsip perlindungan data pribadi sesuai
+                                            <strong>Undang-Undang Republik Indonesia Nomor 27 Tahun 2022 tentang
+                                            Pelindungan Data Pribadi (UU PDP)</strong>.
+                                        </p>
+
+                                        <!-- Informasi yang dikumpulkan -->
+                                        <h2 class="wl-privacy-h2">2. Informasi yang Kami Kumpulkan</h2>
+                                        <p>
+                                            Saat Anda melakukan pemesanan di situs kami, kami hanya meminta
+                                            data yang benar-benar diperlukan untuk memproses dan mengantarkan
+                                            pesanan Anda. Berikut adalah rincian data yang kami kumpulkan:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>
+                                                <strong>Nama Lengkap</strong> — digunakan untuk identifikasi
+                                                pemesan dan pengiriman.
+                                            </li>
+                                            <li>
+                                                <strong>Nomor WhatsApp</strong> — saluran komunikasi utama
+                                                kami. <em>Warung Lakku tidak menyediakan layanan telepon
+                                                (voice call); semua komunikasi terkait pesanan dilakukan
+                                                melalui WhatsApp.</em>
+                                            </li>
+                                            <li>
+                                                <strong>Alamat Lengkap</strong> — alamat pengiriman pesanan
+                                                (jalan, dusun, desa, kecamatan, kabupaten).
+                                            </li>
+                                            <li>
+                                                <strong>Koordinat GPS</strong> — titik koordinat lokasi
+                                                pengiriman (latitude, longitude) yang Anda berikan secara
+                                                sukarela melalui tombol deteksi otomatis GPS di halaman
+                                                checkout, atau yang Anda masukkan secara manual. Koordinat
+                                                ini membantu kurir menemukan lokasi pengiriman dengan akurat.
+                                            </li>
+                                            <li>
+                                                <strong>Alamat email otomatis</strong> — sistem kami
+                                                membuatkan alamat email internal dengan format
+                                                <code>wa_&lt;nomor-whatsapp&gt;@warunglakku.com</code>
+                                                agar akun pelanggan tetap dapat dibuat tanpa Anda perlu
+                                                memasukkan email. Email ini TIDAK digunakan untuk mengirim
+                                                newsletter atau promosi.
+                                            </li>
+                                            <li>
+                                                <strong>Riwayat pesanan</strong> — daftar produk yang Anda
+                                                beli, jumlah, harga, status pengiriman, dan catatan
+                                                transaksi lainnya.
+                                            </li>
+                                            <li>
+                                                <strong>Data teknis (cookie)</strong> — sesi login, keranjang
+                                                belanja, preferensi bahasa, dan token keamanan yang disimpan
+                                                di browser Anda agar situs berfungsi dengan baik.
+                                            </li>
+                                        </ul>
+
+                                        <!-- Penggunaan informasi -->
+                                        <h2 class="wl-privacy-h2">3. Bagaimana Kami Menggunakan Informasi Anda</h2>
+                                        <p>
+                                            Informasi yang Anda berikan hanya digunakan untuk tujuan-tujuan
+                                            berikut:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>Memproses dan mengonfirmasi pesanan Anda.</li>
+                                            <li>
+                                                Mengoordinasikan pengiriman pesanan ke alamat dan koordinat
+                                                GPS yang Anda berikan.
+                                            </li>
+                                            <li>
+                                                Menghubungi Anda melalui WhatsApp terkait status pesanan,
+                                                perubahan jadwal, atau klarifikasi alamat.
+                                            </li>
+                                            <li>
+                                                Menyimpan riwayat transaksi untuk keperluan administrasi,
+                                                pelaporan pajak, dan layanan pelanggan.
+                                            </li>
+                                            <li>
+                                                Meningkatkan kualitas layanan, misalnya memperbaiki cakupan
+                                                area pengiriman berdasarkan data koordinat agregat
+                                                (anonim).
+                                            </li>
+                                        </ul>
+                                        <p>
+                                            Kami <strong>TIDAK</strong> akan menggunakan data Anda untuk:
+                                        </p>
+                                        <ul class="wl-privacy-list wl-privacy-no">
+                                            <li>Mengirimkan promosi atau newsletter tanpa izin Anda.</li>
+                                            <li>Menjual atau menyewakan data Anda ke pihak ketiga.</li>
+                                            <li>
+                                                Melakukan profiling yang dapat memengaruhi keputusan
+                                                hukum, kredit, atau asuransi.
+                                            </li>
+                                        </ul>
+
+                                        <!-- Pembagian informasi -->
+                                        <h2 class="wl-privacy-h2">4. Pembagian Informasi kepada Pihak Ketiga</h2>
+                                        <p>
+                                            Warung Lakku <strong>tidak menjual, menyewakan, atau memperdagangkan</strong>
+                                            data pribadi Anda. Kami hanya membagikan data sebatas yang diperlukan
+                                            kepada:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>
+                                                <strong>Kurir pengiriman</strong> — untuk mengantarkan pesanan
+                                                ke alamat dan koordinat yang Anda berikan. Hanya nama, alamat,
+                                                nomor WhatsApp, dan koordinat yang dibagikan.
+                                            </li>
+                                            <li>
+                                                <strong>Penyedia layanan pembayaran</strong> — jika Anda memilih
+                                                metode pembayaran transfer manual, kami membagikan ID pesanan
+                                                dan jumlah transfer untuk verifikasi.
+                                            </li>
+                                            <li>
+                                                <strong>Otoritas yang berwenang</strong> — apabila diwajibkan
+                                                oleh hukum, perintah pengadilan, atau permintaan resmi dari
+                                                aparat penegak hukum yang sah.
+                                            </li>
+                                        </ul>
+
+                                        <!-- Keamanan data -->
+                                        <h2 class="wl-privacy-h2">5. Keamanan Data</h2>
+                                        <p>
+                                            Kami menerapkan langkah-langkah teknis dan organisasi untuk
+                                            melindungi data pribadi Anda dari akses tidak sah, kehilangan,
+                                            atau penyalahgunaan. Langkah-langkah tersebut meliputi:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>
+                                                Koneksi ke situs ini diamankan dengan HTTPS/TLS (sertifikat
+                                                SSL) sehingga data yang dikirim antara browser Anda dan
+                                                server kami terenkripsi.
+                                            </li>
+                                            <li>
+                                                Akses ke database pesanan dibatasi hanya untuk petugas yang
+                                                berwenang dan tercatat dalam log audit sistem.
+                                            </li>
+                                            <li>
+                                                Kata sandi akun pelanggan disimpan dalam bentuk terenkripsi
+                                                (hash) satu arah, sehingga tidak dapat dibaca langsung oleh
+                                                siapa pun, termasuk administrator.
+                                            </li>
+                                            <li>
+                                                Data koordinat GPS hanya dapat diakses oleh kurir dan petugas
+                                                pengiriman selama proses pengiriman aktif.
+                                            </li>
+                                        </ul>
+
+                                        <!-- Cookie -->
+                                        <h2 class="wl-privacy-h2">6. Penggunaan Cookie</h2>
+                                        <p>
+                                            Situs ini menggunakan cookie untuk menjaga sesi login, menyimpan
+                                            isi keranjang belanja, mengingat preferensi bahasa, serta
+                                            memastikan keamanan transaksi. Cookie yang kami gunakan adalah:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>
+                                                <strong>Cookie esensial</strong> — wajib agar situs berfungsi.
+                                                Tidak dapat dinonaktifkan.
+                                            </li>
+                                            <li>
+                                                <strong>Cookie sesi</strong> — hilang otomatis saat Anda
+                                                menutup browser.
+                                            </li>
+                                            <li>
+                                                <strong>Cookie keamanan</strong> — token CSRF untuk mencegah
+                                                serangan pemalsuan permintaan lintas situs.
+                                            </li>
+                                        </ul>
+                                        <p>
+                                            Kami <strong>tidak</strong> menggunakan cookie pelacakan pihak
+                                            ketiga (seperti Google Analytics, Facebook Pixel) untuk
+                                            periklanan atau analitik lintas-situs.
+                                        </p>
+
+                                        <!-- Hak pengguna -->
+                                        <h2 class="wl-privacy-h2">7. Hak-Hak Anda</h2>
+                                        <p>
+                                            Sesuai UU PDP, Anda memiliki hak-hak berikut terkait data pribadi
+                                            Anda:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>
+                                                <strong>Hak akses</strong> — meminta salinan data pribadi
+                                                yang kami simpan tentang Anda.
+                                            </li>
+                                            <li>
+                                                <strong>Hak perbaikan</strong> — meminta kami memperbaiki
+                                                data yang tidak akurat (mis. salah nomor WhatsApp atau
+                                                alamat).
+                                            </li>
+                                            <li>
+                                                <strong>Hak penghapusan</strong> — meminta penghapusan data
+                                                pribadi Anda, kecuali yang wajib disimpan menurut hukum
+                                                (mis. catatan transaksi untuk pajak).
+                                            </li>
+                                            <li>
+                                                <strong>Hak penarikan izin</strong> — menarik persetujuan
+                                                yang telah Anda berikan kapan saja.
+                                            </li>
+                                            <li>
+                                                <strong>Hak portabilitas</strong> — meminta data Anda dalam
+                                                format yang dapat dibaca mesin (mis. CSV/JSON).
+                                            </li>
+                                        </ul>
+                                        <p>
+                                            Untuk menggunakan hak-hak ini, silakan hubungi kami melalui
+                                            WhatsApp di <a href="https://wa.me/6285733556953">+62 857-3355-6953</a>
+                                            atau email <a href="mailto:hello@warunglakku.com">hello@warunglakku.com</a>.
+                                        </p>
+
+                                        <!-- Penyimpanan data -->
+                                        <h2 class="wl-privacy-h2">8. Penyimpanan dan Retensi Data</h2>
+                                        <p>
+                                            Data pribadi Anda disimpan selama diperlukan untuk tujuan yang
+                                            dijelaskan dalam kebijakan ini, yaitu:
+                                        </p>
+                                        <ul class="wl-privacy-list">
+                                            <li>
+                                                <strong>Data pesanan</strong> — disimpan selama 5 (lima) tahun
+                                                sesuai ketentuan retensi dokumen perpajakan Indonesia.
+                                            </li>
+                                            <li>
+                                                <strong>Akun pelanggan</strong> — disimpan selama akun Anda
+                                                aktif. Jika Anda meminta penghapusan akun, data akan
+                                                dihapus dalam 30 hari kerja kecuali data yang wajib disimpan
+                                                menurut hukum.
+                                            </li>
+                                            <li>
+                                                <strong>Koordinat GPS</strong> — dihapus dari catatan aktif
+                                                setelah pesanan selesai diantar dan masa retensi 90 hari
+                                                berlalu (hanya untuk keperluan layanan pelanggan).
+                                            </li>
+                                        </ul>
+
+                                        <!-- Anak -->
+                                        <h2 class="wl-privacy-h2">9. Privasi Anak</h2>
+                                        <p>
+                                            Situs ini tidak ditujukan untuk anak di bawah usia 13 tahun. Kami
+                                            tidak secara sengaja mengumpulkan data pribadi dari anak-anak.
+                                            Jika Anda adalah orang tua atau wali dan menyadari bahwa anak
+                                            Anda telah memberikan data kepada kami, silakan hubungi kami
+                                            melalui WhatsApp agar data tersebut dapat kami hapus.
+                                        </p>
+
+                                        <!-- Perubahan kebijakan -->
+                                        <h2 class="wl-privacy-h2">10. Perubahan Kebijakan</h2>
+                                        <p>
+                                            Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu
+                                            untuk mencerminkan perubahan praktik bisnis atau peraturan yang
+                                            berlaku. Setiap perubahan akan dipublikasikan di halaman ini
+                                            dengan tanggal pembaruan di bagian atas. Kami sarankan Anda
+                                            meninjau halaman ini secara berkala.
+                                        </p>
+
+                                        <!-- Kontak -->
+                                        <h2 class="wl-privacy-h2">11. Hubungi Kami</h2>
+                                        <p>
+                                            Jika Anda memiliki pertanyaan, keluhan, atau ingin menggunakan
+                                            hak-hak Anda atas data pribadi, silakan hubungi kami melalui:
+                                        </p>
+                                        <div class="wl-privacy-contact-card">
+                                            <p>
+                                                <i class="fa fa-whatsapp fa-fw me-2"/>
+                                                <a href="https://wa.me/6285733556953" target="_blank" rel="noopener">
+                                                    +62 857-3355-6953 (WhatsApp)
+                                                </a>
+                                            </p>
+                                            <p>
+                                                <i class="fa fa-envelope fa-fw me-2"/>
+                                                <a href="mailto:hello@warunglakku.com">hello@warunglakku.com</a>
+                                            </p>
+                                            <p>
+                                                <i class="fa fa-map-marker fa-fw me-2"/>
+                                                Dusun Ngrekesan, Desa Ngadri, Kec. Binangun,
+                                                Kab. Blitar, Jawa Timur 66193, Indonesia
+                                            </p>
+                                            <p>
+                                                <i class="fa fa-location-arrow fa-fw me-2"/>
+                                                Koordinat GPS:
+                                                <a href="https://www.openstreetmap.org/?mlat=-8.2340141&amp;mlon=112.3361544#map=15/-8.2340141/112.3361544"
+                                                   target="_blank" rel="noopener">
+                                                    -8.2340141, 112.3361544
+                                                </a>
+                                            </p>
+                                        </div>
+                                        <p class="text-muted mt-4 mb-0 wl-privacy-footer-note">
+                                            Dokumen ini disusun untuk Warung Lakku oleh Engineer Desa.
+                                        </p>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </t>
+            </t>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- website.page record: binds URL /privacy to the view above    -->
+    <!-- ============================================================ -->
+    <record id="privacy_policy_page_link" model="website.page">
+        <field name="url">/privacy</field>
+        <field name="view_id" ref="privacy_policy_page"/>
+        <field name="website_indexed" eval="False"/>
+        <field name="website_published" eval="True"/>
+        <field name="type">qweb</field>
+    </record>
+
+</odoo>
