@@ -2000,11 +2000,35 @@ details.wl_oh_mobile {
             transform: none;
             box-shadow: 0 4px 12px rgba(122, 12, 20, 0.38);
         }
+
+        // Bulletproof active-state icon + text color.
+        // Bootstrap/Odoo ship `a { color: ... }` and `i.fa` color rules
+        // that can leak into the chip and leave the icon/text maroon
+        // on a maroon background (invisible). These explicit selectors
+        // have higher specificity (0,3,0) than any single-class `.fa`
+        // rule, so the white color sticks.
+        i,
+        i.fa,
+        span,
+        .wl_chip_count {
+            color: #ffffff;
+        }
     }
 
     i {
         font-size: 13px;
         line-height: 1;
+        // Inherit color from parent (active state sets white).
+        // Bootstrap's `a` color rule has lower specificity than
+        // `.wl_chip`, so inheritance works, but we set it explicitly
+        // here too for clarity.
+        color: inherit;
+    }
+
+    // Default (non-active) span color is inherited from .wl_chip
+    // (maroon-dark). Made explicit for clarity.
+    span {
+        color: inherit;
     }
 }
 
