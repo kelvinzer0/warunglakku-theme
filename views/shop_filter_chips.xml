@@ -7,25 +7,25 @@
         Renders a horizontally-scrollable strip of pill-shaped category
         chips JUST ABOVE the products grid on /shop (i.e. BELOW the
         products_header toolbar). Each chip links to
-        /shop?category=<id> (Odoo's native category filter URL).
+        /shop?category=&lt;id&gt; (Odoo's native category filter URL).
 
         Data source: product.public.category records that are linked to
         at least one published product. These public categories mirror
         the WhatsApp Business collections synced by the n8n workflow
         (which writes to product.category under parent_id=7 "Warung
         Lakku"). The one-time sync script sync_public_categories.py
-        bridges product.category -> product.public.category.
+        bridges product.category to product.public.category.
 
         Active chip highlighting:
         - When URL is /shop (no filter): "Semua" chip is active.
-        - When URL is /shop?category=<id>: matching chip is active.
+        - When URL is /shop?category=&lt;id&gt;: matching chip is active.
         The `category` variable is set by Odoo's shop() controller in
         the template context.
 
         URL format:
         - "Semua" chip: href="/shop"
-        - Category chips: href="/shop?category=<id>"  (integer id, NOT
-          the recordset -- passing a recordset to keep() in Odoo 17
+        - Category chips: href="/shop?category=&lt;id&gt;"  (integer id,
+          NOT the recordset. Passing a recordset to keep() in Odoo 17
           produces a broken URL like "?category=product.public.category(1,)"
           that triggers HTTP 500.)
 
@@ -40,16 +40,16 @@
         NOTE on Odoo native filmstrip removal (v17.0.3.10.1):
         - Odoo's website_sale.products template ships its own category
           navigation called `o_wsale_filmstip_container` (note: Odoo
-          has a typo -- it's "filmstip" not "filmstrip"). It renders
-          as a row of Bootstrap-style buttons ABOVE the products grid
+          has a typo, it's "filmstip" not "filmstrip"). It renders as
+          a row of Bootstrap-style buttons ABOVE the products grid
           table wrapper.
         - We REMOVE that native filmstrip via xpath replace, because
           our `wl_filter_chips` already serves the same purpose with
           a better mobile UX (overflow-x scroll, pill shape, count
           badge).
         - Without this removal, the /shop page would show TWO category
-          strips: our chips at the top + Odoo's filmstrip just above
-          the grid -- duplicate UI that confused users.
+          strips: our chips at the top plus Odoo's filmstrip just above
+          the grid. Duplicate UI that confused users.
     -->
     <record model="ir.ui.view" id="shop_filter_chips">
         <field name="name">Warung Lakku: Shop Filter Chips</field>
@@ -63,7 +63,7 @@
                     1) REMOVE Odoo's native category filmstrip to avoid
                        duplicate UI. We replace the entire
                        o_wsale_filmstip_container div with an empty
-                       <t> so nothing renders there.
+                       t element so nothing renders there.
                 -->
                 <xpath expr="//div[contains(@class, 'o_wsale_filmstip_container')]" position="replace">
                     <t/>
@@ -77,14 +77,14 @@
                        live, so the visual order on /shop becomes:
 
                          [search/sort toolbar]
-                         [our pill chips  <-- here]
+                         [our pill chips, here]
                          [products grid]
 
                        instead of the previous (pre-v3.10.1) layout:
 
-                         [our pill chips  <-- duplicate, top]
+                         [our pill chips, duplicate top]
                          [search/sort toolbar]
-                         [Odoo native filmstrip  <-- duplicate, bottom]
+                         [Odoo native filmstrip, duplicate bottom]
                          [products grid]
                 -->
                 <xpath expr="//div[contains(@class, 'o_wsale_products_grid_table_wrapper')]" position="before">
