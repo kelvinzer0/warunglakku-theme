@@ -38,14 +38,16 @@
         - Each chip has `flex-shrink: 0` so they don't compress.
 
         NOTE on Odoo native filmstrip removal (v17.0.3.10.1):
-        - Odoo's website_sale.products template ships its own category
-          navigation called `o_wsale_filmstip_container` (note: Odoo
-          has a typo, it's "filmstip" not "filmstrip"). It renders as
-          a row of Bootstrap-style buttons ABOVE the products grid
-          table wrapper.
-        - We REMOVE that native filmstrip via xpath replace, because
-          our `wl_filter_chips` already serves the same purpose with
-          a better mobile UX (overflow-x scroll, pill shape, count
+        - Odoo's website_sale.products template renders a category
+          navigation by calling the child template
+          `website_sale.filmstrip_categories` via t-call. That child
+          template renders the `o_wsale_filmstip_container` div (note:
+          Odoo has a typo, it is "filmstip" not "filmstrip"). It shows
+          as a row of Bootstrap-style buttons ABOVE the products grid.
+        - We REMOVE that native filmstrip by replacing the t-call
+          element in the parent view with an empty t. Our
+          `wl_filter_chips` already serves the same purpose with a
+          better mobile UX (overflow-x scroll, pill shape, count
           badge).
         - Without this removal, the /shop page would show TWO category
           strips: our chips at the top plus Odoo's filmstrip just above
@@ -61,11 +63,14 @@
             <data>
                 <!--
                     1) REMOVE Odoo's native category filmstrip to avoid
-                       duplicate UI. We replace the entire
-                       o_wsale_filmstip_container div with an empty
-                       t element so nothing renders there.
+                       duplicate UI. We replace the t-call element that
+                       invokes website_sale.filmstrip_categories with an
+                       empty t, so the filmstrip never renders. (We
+                       cannot xpath the o_wsale_filmstip_container div
+                       directly because it lives in the called child
+                       template, not in this parent view.)
                 -->
-                <xpath expr="//div[contains(@class, 'o_wsale_filmstip_container')]" position="replace">
+                <xpath expr="//t[@t-call='website_sale.filmstrip_categories']" position="replace">
                     <t/>
                 </xpath>
 
