@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Warung Lakku Theme',
-    'version': '17.0.3.8.1',
-    'depends': ['website', 'website_sale'],
+    'version': '17.0.3.9.0',
+    'depends': ['website', 'website_sale', 'website_sale_pickup_at_store'],
     'data': [
         'views/assets.xml',
         'views/homepage.xml',
@@ -11,6 +11,7 @@
         'views/footer_custom.xml',
         'views/privacy_policy.xml',
         'views/shop_operating_hours.xml',
+        'views/cron_business_hours.xml',
     ],
     'license': 'LGPL-3',
 }

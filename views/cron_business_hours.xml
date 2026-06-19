@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Warung Lakku: Auto-refresh business hours from Evolution API
+        =================================================================
+        The `website_sale_pickup_at_store` module provides
+        sale.order._fetch_business_hours_from_evolution(), but that method
+        is only triggered lazily (on checkout when cache is empty). As a
+        result the cached business_hours_json in ir.config_parameter can
+        go stale indefinitely if no one checks out.
+
+        This cron forces a refresh every 6 hours by:
+          1. Clearing the cache (so the 24h TTL inside the method doesn't
+             short-circuit the fetch).
+          2. Calling the method, which re-fetches from Evolution API and
+             writes back to ir.config_parameter.
+
+        The card on /shop (views/shop_operating_hours.xml) reads from
+        that config parameter, so once this cron runs the card always
+        shows fresh data.
+    -->
+    <record model="ir.cron" id="cron_refresh_business_hours_from_evolution">
+        <field name="name">Warung Lakku: Refresh Business Hours (Evolution API)</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+ICP = env['ir.config_parameter'].sudo()
+# Clear cache so the 24h TTL inside _fetch_business_hours_from_evolution
+# does NOT short-circuit. We want this cron to ALWAYS re-fetch.
+ICP.set_param('website_sale_pickup_at_store.business_hours_json', '')
+ICP.set_param('website_sale_pickup_at_store.business_hours_fetched_at', '')
+# Re-fetch from Evolution API. Method logs internally on success/failure.
+model._fetch_business_hours_from_evolution()
+]]></field>
+        <field name="interval_number">6</field>
+        <field name="interval_type">hours</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+        <field name="doall" eval="False"/>
+        <field name="priority">50</field>
+    </record>
+</odoo>
