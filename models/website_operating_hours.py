@@ -161,3 +161,32 @@ class Website(models.Model):
             'days': days,
             'fetched_at': fetched_at_display,
         }
+
+    def get_warunglakku_shop_chips(self):
+        """Return recordset of product.public.category records that are
+        linked to at least one published product, sorted by name
+        (case-insensitive).
+
+        Used by the Filter Chips / Pill Tabs widget on /shop. The chips
+        render as a horizontal-scrollable list of pill-shaped links.
+
+        Background:
+        - The n8n workflow syncs WA collections → product.category
+          (internal category, parent_id=7 "Warung Lakku").
+        - /shop filters by product.public.category via ?category=<id> or
+          /shop/category/<slug>-<id>.
+        - The one-time sync script sync_public_categories.py creates
+          matching product.public.category records and links them to
+          published products via public_categ_ids.
+        - This method returns the "visible" public cats that should
+          appear as chips (those with at least 1 published product).
+
+        Returns:
+            recordset of product.public.category (empty if none).
+        """
+        PT = self.env['product.template'].sudo()
+        pub_recs = PT.search([('is_published', '=', True)]).mapped('public_categ_ids')
+        if not pub_recs:
+            return self.env['product.public.category'].sudo()
+        # Sort by name case-insensitively for stable ordering
+        return pub_recs.sorted(lambda c: (c.name or '').lower())
