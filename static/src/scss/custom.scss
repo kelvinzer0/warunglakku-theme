@@ -1521,6 +1521,22 @@ body:has(#o_wsale_apply_list:checked) .o_wsale_products_grid_table_wrapper .o_ws
             }
         }
 
+        // "Closing Soon" state — shown for the last 30 minutes before
+        // close_time. Uses yellow/orange to signal "hurry up". Set by
+        // theme.js _initOperatingHoursLiveStatus() via data-state attr.
+        // Note: data-open is set to "false" for this state, so we need
+        // to override the red dot/text with the yellow styles.
+        &[data-state="closing_soon"] {
+            .wl_oh_dot {
+                background: #f39c12 !important;
+                box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.20) !important;
+                animation: wl_oh_pulse 1s infinite !important; // faster pulse = urgent
+            }
+            .wl_oh_status_text {
+                color: #d68910 !important;
+            }
+        }
+
         .wl_oh_dot {
             width: 10px !important;
             height: 10px !important;
@@ -1746,6 +1762,18 @@ details.wl_oh_mobile {
             .wl_oh_dot {
                 background: #c0392b !important;
                 box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15);
+            }
+        }
+
+        // "Closing Soon" state for mobile (matches desktop sidebar).
+        // Yellow/orange to signal "hurry up, store is closing".
+        &[data-state="closing_soon"] {
+            background: rgba(243, 156, 18, 0.30) !important;
+            color: #fff3cd !important;
+            .wl_oh_dot {
+                background: #f39c12 !important;
+                box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.20) !important;
+                animation: wl_oh_pulse 1s infinite !important;
             }
         }
     }

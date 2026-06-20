@@ -12,7 +12,20 @@
 
         Data is computed server-side via website.get_warunglakku_operating_hours()
         (see models/website_operating_hours.py) so the card renders
-        fully on first paint — no AJAX, no client-side JS.
+        fully on first paint, no AJAX needed.
+
+        Client-side re-evaluation (v17.0.3.10.2):
+        - Odoo caches the /shop HTML server-side. At 20:00 sharp,
+          if a cached page from 19:59 is served, the widget would
+          still show "Buka Sekarang" even though the store is now
+          closed. To fix this, we embed the today's open/close
+          times as data-* attributes on the .wl_oh_status element.
+          A small JS in theme.js re-evaluates the status every
+          30 seconds on the client and corrects it if the server
+          render is stale.
+        - Also adds a "closing soon" (Akan Tutup) intermediate
+          state shown for the last 30 minutes before close_time,
+          so customers get a clear visual warning.
     -->
     <record model="ir.ui.view" id="shop_operating_hours_sidebar">
         <field name="name">Warung Lakku: Shop Sidebar Operating Hours</field>
@@ -24,13 +37,20 @@
             <data>
                 <xpath expr="//div[contains(@class, 'o_wsale_products_grid_before_rail')]/div[contains(@class, 'products_attributes_filters')]" position="before">
                     <t t-set="oh" t-value="website.get_warunglakku_operating_hours()"/>
-                    <div class="wl_oh_card" t-att-data-available="'true' if oh.get('available') else 'false'">
+                    <t t-set="oh_today" t-value="oh.get('today') or {}"/>
+                    <div class="wl_oh_card"
+                         t-att-data-available="'true' if oh.get('available') else 'false'"
+                         t-att-data-today-mode="oh_today.get('mode') or 'closed'"
+                         t-att-data-today-open="oh_today.get('open_time') or ''"
+                         t-att-data-today-close="oh_today.get('close_time') or ''">
                         <div class="wl_oh_header">
                             <i class="fa fa-clock-o"/>
                             <span>Jam Operasional</span>
                         </div>
                         <t t-if="oh.get('available')">
-                            <div class="wl_oh_status" t-att-data-open="'true' if oh.get('is_open_now') else 'false'">
+                            <div class="wl_oh_status"
+                                 t-att-data-open="'true' if oh.get('is_open_now') else 'false'"
+                                 t-att-data-state="'open' if oh.get('is_open_now') else 'closed'">
                                 <span class="wl_oh_dot"/>
                                 <t t-if="oh.get('is_open_now')">
                                     <span class="wl_oh_status_text">Buka Sekarang</span>
@@ -95,14 +115,22 @@
             <data>
                 <xpath expr="//div[@id='products_grid']/div[contains(@class, 'products_header')]" position="before">
                     <t t-set="oh_m" t-value="website.get_warunglakku_operating_hours()"/>
-                    <details class="wl_oh_mobile d-lg-none" t-att-data-available="'true' if oh_m.get('available') else 'false'" t-att-data-open="'true' if oh_m.get('is_open_now') else 'false'">
+                    <t t-set="oh_m_today" t-value="oh_m.get('today') or {}"/>
+                    <details class="wl_oh_mobile d-lg-none"
+                             t-att-data-available="'true' if oh_m.get('available') else 'false'"
+                             t-att-data-open="'true' if oh_m.get('is_open_now') else 'false'"
+                             t-att-data-today-mode="oh_m_today.get('mode') or 'closed'"
+                             t-att-data-today-open="oh_m_today.get('open_time') or ''"
+                             t-att-data-today-close="oh_m_today.get('close_time') or ''">
                         <summary class="wl_oh_mobile_summary">
                             <span class="wl_oh_mobile_left">
                                 <i class="fa fa-clock-o"/>
                                 <span class="wl_oh_mobile_title">Jam Operasional</span>
                             </span>
                             <t t-if="oh_m.get('available')">
-                                <span class="wl_oh_mobile_status" t-att-data-open="'true' if oh_m.get('is_open_now') else 'false'">
+                                <span class="wl_oh_mobile_status"
+                                      t-att-data-open="'true' if oh_m.get('is_open_now') else 'false'"
+                                      t-att-data-state="'open' if oh_m.get('is_open_now') else 'closed'">
                                     <span class="wl_oh_dot"/>
                                     <t t-if="oh_m.get('is_open_now')">
                                         <span class="wl_oh_status_text">Buka Sekarang</span>
