@@ -899,7 +899,7 @@
                                 // exists" errors.
                             });
 
-                            // Custom marker
+                            // Custom marker (USER delivery location — blue pin)
                             var markerEl = document.createElement('div');
                             markerEl.className = 'wl-map-marker';
                             markerEl.innerHTML =
@@ -914,6 +914,169 @@
                             })
                                 .setLngLat([lng, lat])
                                 .addTo(mapInstance);
+
+                            // ---- v3.10.15: SPECIAL Warung Lakku cabang marker ----
+                            // Cabang tunggal Warung Lakku: -8.188092, 112.356862 (Binangun, Kab. Blitar)
+                            // Radius layanan: 15km (sesuai wl_osm_enrichment area config)
+                            // Marker ini membedakan cabang Warung Lakku dari POI/building biasa:
+                            //   - Pin maroon tebal dengan icon FA storefront
+                            //   - Label "WARUNG LAKKU — Binangun" selalu tampil
+                            //   - Circle 15km boundary (fill maroon 8% + stroke maroon dashed)
+                            //   - Popup info jam operasional + alamat
+                            var WL_CABANG = { lat: -8.188092, lng: 112.356862, radiusM: 15000 };
+
+                            // (a) 15km service-radius circle (GeoJSON polygon approx via turf-like inline)
+                            // Kita generate circle polygon manual (64 segments) supaya tidak perlu lib turf.
+                            function makeCircleGeoJSON(centerLat, centerLng, radiusM, segments) {
+                                var coords = [];
+                                var R = 6378137; // earth radius (m)
+                                for (var i = 0; i &lt;= segments; i++) {
+                                    var bearing = (i * 360 / segments) * Math.PI / 180;
+                                    var lat1 = centerLat * Math.PI / 180;
+                                    var lng1 = centerLng * Math.PI / 180;
+                                    var dByR = radiusM / R;
+                                    var lat2 = Math.asin(
+                                        Math.sin(lat1) * Math.cos(dByR) +
+                                        Math.cos(lat1) * Math.sin(dByR) * Math.cos(bearing));
+                                    var lng2 = lng1 + Math.atan2(
+                                        Math.sin(bearing) * Math.sin(dByR) * Math.cos(lat1),
+                                        Math.cos(dByR) - Math.sin(lat1) * Math.sin(lat2));
+                                    coords.push([
+                                        lng2 * 180 / Math.PI,
+                                        lat2 * 180 / Math.PI
+                                    ]);
+                                }
+                                return {
+                                    type: 'Feature',
+                                    geometry: {
+                                        type: 'Polygon',
+                                        coordinates: [coords]
+                                    },
+                                    properties: { radiusM: radiusM }
+                                };
+                            }
+
+                            try {
+                                var circleSrc = mapInstance.getSource('wl-cabang-radius');
+                                if (!circleSrc) {
+                                    mapInstance.addSource('wl-cabang-radius', {
+                                        type: 'geojson',
+                                        data: makeCircleGeoJSON(
+                                            WL_CABANG.lat, WL_CABANG.lng,
+                                            WL_CABANG.radiusM, 64)
+                                    });
+
+                                    // Fill (maroon 8% opacity, very subtle supaya tidak ganggu POI)
+                                    mapInstance.addLayer({
+                                        id: 'wl-cabang-radius-fill',
+                                        type: 'fill',
+                                        source: 'wl-cabang-radius',
+                                        paint: {
+                                            'fill-color': '#7a0c14',
+                                            'fill-opacity': 0.06
+                                        }
+                                    });
+
+                                    // Stroke (maroon dashed, always visible)
+                                    mapInstance.addLayer({
+                                        id: 'wl-cabang-radius-stroke',
+                                        type: 'line',
+                                        source: 'wl-cabang-radius',
+                                        paint: {
+                                            'line-color': '#7a0c14',
+                                            'line-width': 1.5,
+                                            'line-dasharray': [4, 3],
+                                            'line-opacity': 0.7
+                                        }
+                                    });
+                                    console.log('WL: cabang 15km radius circle added');
+                                }
+                            } catch (e) {
+                                console.warn('WL: cabang radius circle failed:', e.message);
+                            }
+
+                            // (b) Cabang marker — storefront icon with maroon pin + label badge
+                            var cabangEl = document.createElement('div');
+                            cabangEl.className = 'wl-cabang-marker';
+                            cabangEl.innerHTML =
+                                '&lt;div class="wl-cabang-marker__pin"&gt;' +
+                                    '&lt;i class="fa fa-shopping-basket"&gt;&lt;/i&gt;' +
+                                '&lt;/div&gt;' +
+                                '&lt;div class="wl-cabang-marker__label"&gt;' +
+                                    '&lt;strong&gt;WARUNG LAKKU&lt;/strong&gt;' +
+                                    '&lt;span&gt;Cabang Binangun&lt;/span&gt;' +
+                                '&lt;/div&gt;';
+
+                            var cabangMarker = new maplibregl.Marker({
+                                element: cabangEl,
+                                anchor: 'bottom'
+                            })
+                                .setLngLat([WL_CABANG.lng, WL_CABANG.lat])
+                                .addTo(mapInstance);
+
+                            // (c) Popup on click with full info
+                            var cabangPopup = new maplibregl.Popup({
+                                offset: 30,
+                                closeButton: true,
+                                closeOnClick: false,
+                                maxWidth: '280px'
+                            }).setHTML(
+                                '&lt;div style="font-family:Inter,sans-serif;padding:4px"&gt;' +
+                                    '&lt;div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"&gt;' +
+                                        '&lt;div style="width:32px;height:32px;border-radius:50%;background:#7a0c14;' +
+                                             'color:#fff;display:flex;align-items:center;justify-content:center;' +
+                                             'font-size:14px"&gt;&lt;i class="fa fa-shopping-basket"&gt;&lt;/i&gt;&lt;/div&gt;' +
+                                        '&lt;div&gt;' +
+                                            '&lt;div style="font-weight:700;color:#7a0c14;font-size:14px;line-height:1.1"&gt;' +
+                                                'WARUNG LAKKU&lt;/div&gt;' +
+                                            '&lt;div style="font-size:11px;color:#666;line-height:1.1"&gt;' +
+                                                'Cabang Binangun (Pusat)&lt;/div&gt;' +
+                                        '&lt;/div&gt;' +
+                                    '&lt;/div&gt;' +
+                                    '&lt;div style="font-size:12px;color:#333;line-height:1.5"&gt;' +
+                                        '&lt;i class="fa fa-map-marker me-1" style="color:#7a0c14"&gt;&lt;/i&gt;' +
+                                        'Binangun, Kab. Blitar, Jawa Timur&lt;br/&gt;' +
+                                        '&lt;i class="fa fa-crosshairs me-1" style="color:#7a0c14"&gt;&lt;/i&gt;' +
+                                        '-8.188092, 112.356862&lt;br/&gt;' +
+                                        '&lt;i class="fa fa-circle-o-notch me-1" style="color:#7a0c14"&gt;&lt;/i&gt;' +
+                                        'Radius layanan: &lt;strong&gt;15 km&lt;/strong&gt;&lt;br/&gt;' +
+                                        '&lt;i class="fa fa-clock-o me-1" style="color:#7a0c14"&gt;&lt;/i&gt;' +
+                                        '08.00 — 21.00 WIB setiap hari' +
+                                    '&lt;/div&gt;' +
+                                    '&lt;div style="margin-top:8px;padding-top:8px;' +
+                                                 'border-top:1px solid #eee;font-size:11px;color:#888"&gt;' +
+                                        '&lt;i class="fa fa-info-circle me-1"&gt;&lt;/i&gt;' +
+                                        'Area abu-abu menunjukkan jangkauan layanan ' +
+                                        'pengiriman Warung Lakku.' +
+                                    '&lt;/div&gt;' +
+                                '&lt;/div&gt;'
+                            );
+
+                            cabangMarker.setPopup(cabangPopup);
+
+                            // (d) Auto-fit supaya circle 15km + user location keduanya terlihat
+                            //     kalau user location &gt; 5km dari cabang.
+                            try {
+                                var userDist = Math.sqrt(
+                                    Math.pow((lat - WL_CABANG.lat) * 111320, 2) +
+                                    Math.pow((lng - WL_CABANG.lng) * 111320 *
+                                        Math.cos(WL_CABANG.lat * Math.PI / 180), 2)
+                                );
+                                if (userDist &gt; 5000) {
+                                    var bounds = new maplibregl.LngLatBounds();
+                                    bounds.extend([WL_CABANG.lng, WL_CABANG.lat]);
+                                    bounds.extend([lng, lat]);
+                                    // Pad sedikit supaya marker tidak mentok edge
+                                    mapInstance.fitBounds(bounds, {
+                                        padding: 60,
+                                        maxZoom: 14
+                                    });
+                                    console.log('WL: auto-fit bounds (user ' +
+                                        Math.round(userDist) + 'm from cabang)');
+                                }
+                            } catch (e) {
+                                console.warn('WL: auto-fit failed:', e.message);
+                            }
 
                             // Nav controls
                             mapInstance.addControl(

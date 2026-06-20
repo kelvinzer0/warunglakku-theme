@@ -3134,6 +3134,96 @@ details.wl_oh_mobile {
     filter: blur(2px);
 }
 
+// ---- v3.10.15: SPECIAL marker for Warung Lakku cabang tunggal ----
+// Distinct from regular .wl-map-marker (which is for user delivery location):
+//   - Larger pin (44px vs 36px)
+//   - Maroon fill + thick yellow border (vs maroon fill + thin yellow border)
+//   - Pulsing ring animation to draw attention
+//   - Persistent label badge "WARUNG LAKKU — Cabang Binangun"
+//   - Storefront icon (fa-shopping-basket) instead of generic map-marker
+.wl-cabang-marker {
+    position: relative;
+    width: 44px;
+    height: 56px;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.wl-cabang-marker__pin {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: var(--wl-maroon);
+    border: 3px solid var(--wl-yellow);
+    box-shadow: 0 6px 16px rgba(90, 8, 14, 0.6);
+    animation: wl-cabang-pulse 2s ease-in-out infinite;
+
+    .fa {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        color: #fff7e0;
+        font-size: 18px;
+    }
+}
+
+@keyframes wl-cabang-pulse {
+    0%, 100% {
+        box-shadow: 0 6px 16px rgba(90, 8, 14, 0.6),
+                    0 0 0 0 rgba(245, 196, 0, 0.6);
+    }
+    50% {
+        box-shadow: 0 6px 16px rgba(90, 8, 14, 0.6),
+                    0 0 0 12px rgba(245, 196, 0, 0);
+    }
+}
+
+.wl-cabang-marker__label {
+    position: absolute;
+    top: 8px;
+    left: 50px;
+    background: var(--wl-maroon);
+    color: #fff7e0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+
+    strong {
+        display: block;
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.4px;
+    }
+
+    span {
+        display: block;
+        opacity: 0.85;
+        font-size: 9px;
+    }
+
+    // Small triangle pointing to the pin
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: -5px;
+        transform: translateY(-50%);
+        border: 5px solid transparent;
+        border-right-color: var(--wl-maroon);
+        border-left: 0;
+    }
+}
+
 // ---- MapLibre popup default override (if ever used) ----
 .maplibregl-popup-content {
     font-family: 'Poppins', sans-serif !important;
