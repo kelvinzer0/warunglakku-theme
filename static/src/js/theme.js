@@ -1,8 +1,8 @@
 /** @odoo-module **/
 
 /*
- * Warung Lakku Theme — Frontend JS
- * =================================
+ * Warung Lakku Theme Frontend JS
+ * =============================
  * Provides three features:
  *
  * 1) Scroll effects: navbar shadow on scroll, fade-in cards
@@ -18,12 +18,20 @@
  *    shown for the last 30 minutes before close_time, so customers
  *    get a clear visual warning to hurry up.
  *
- * Module system: Odoo 17 uses ES modules with `/** @odoo-module **/`
- * header. The old `odoo.define` syntax is deprecated and may not
- * register the module correctly. Use `import` from the actual
- * `@web/legacy/...` paths.
+ * Module system: Odoo 17 ES module. Import the DEFAULT export
+ * (lowercase `publicWidget`) from the web.legacy public_widget
+ * path. Do NOT use a named import (`import { publicWidget }`)
+ * because that name is not a named export — only `PublicWidget`
+ * (capital P, the class) is. The default export is the object
+ * `{ RootWidget, Widget, registry }` which is what we need.
+ *
+ * IMPORTANT: never put the literal directive text inside this
+ * comment. The Odoo asset bundler uses a greedy regex to strip
+ * the directive, and any literal occurrence inside a comment will
+ * be matched, leaving a stray backtick that breaks the entire
+ * bundle (Uncaught SyntaxError: Unexpected identifier 'odoo').
  */
-import { publicWidget } from '@web/legacy/js/public/public_widget';
+import publicWidget from '@web/legacy/js/public/public_widget';
 
 publicWidget.registry.ThemeWarungLakku = publicWidget.Widget.extend({
     // #wrapwrap is Odoo 17's main frontend page wrapper. It is
