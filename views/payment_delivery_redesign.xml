@@ -265,6 +265,31 @@
                         return document.getElementById('wl_delivery_confirm_modal');
                     }
 
+                    // Bootstrap 5 is loaded in Odoo 17 but the global
+                    // `bootstrap` namespace is NOT exposed on window.
+                    // Only individual classes (Modal, Popover, etc.)
+                    // and the jQuery .modal() plugin are available.
+                    // This wrapper picks whichever is available.
+                    function getModalInstance(el) {
+                        if (typeof window.bootstrap !== 'undefined' &amp;&amp;
+                            window.bootstrap.Modal) {
+                            return window.bootstrap.Modal.getOrCreateInstance(el);
+                        }
+                        if (typeof window.Modal !== 'undefined' &amp;&amp;
+                            window.Modal.getOrCreateInstance) {
+                            return window.Modal.getOrCreateInstance(el);
+                        }
+                        // jQuery fallback
+                        if (typeof window.jQuery !== 'undefined') {
+                            var $el = window.jQuery(el);
+                            return {
+                                show: function () { $el.modal('show'); },
+                                hide: function () { $el.modal('hide'); }
+                            };
+                        }
+                        return null;
+                    }
+
                     function getPartnerCoords() {
                         var modal = getModalEl();
                         if (!modal) return {lat: 0, lng: 0, hasCoords: false};
@@ -459,12 +484,32 @@
 
                     function escapeHtml(s) {
                         if (s === null || s === undefined) return '';
+                        // CRITICAL: do NOT use HTML entities like
+                        // amp-hash-39 or amp-amp in this function.
+                        // The XML parser unescapes them once, then
+                        // QWeb does NOT re-escape them on output, so
+                        // the JS string ends up with literal chars
+                        // that break the syntax (e.g. the entity for
+                        // apostrophe becomes a bare single quote,
+                        // turning the replacement string into a
+                        // syntax error "missing ) after argument
+                        // list").
+                        //
+                        // Use JS Unicode escapes instead:
+                        //   backslash-u-0026 = ampersand char
+                        //   backslash-u-0027 = apostrophe char
+                        // These are invisible to the XML parser and
+                        // evaluate at JS runtime to the right char.
+                        // So the JS string "backslash-u-0026 hash 39"
+                        // evaluates to the 5-char HTML entity string
+                        // which is what we want as the escapeHtml
+                        // output for an apostrophe.
                         return String(s)
-                            .replace(/&amp;/g, '&amp;amp;')
-                            .replace(/&lt;/g, '&amp;lt;')
-                            .replace(/&gt;/g, '&amp;gt;')
-                            .replace(/"/g, '&amp;quot;')
-                            .replace(/'/g, '&#39;');
+                            .replace(/\u0026/g, '\u0026amp;')
+                            .replace(/\u003c/g, '\u0026lt;')
+                            .replace(/\u003e/g, '\u0026gt;')
+                            .replace(/\u0022/g, '\u0026quot;')
+                            .replace(/\u0027/g, '\u0026#39;');
                     }
 
                     function openDeliveryModal() {
@@ -473,10 +518,23 @@
                         var coords = getPartnerCoords();
                         if (!coords.hasCoords) return;
 
+                        // IMPORTANT: do NOT set modalState to "showing"
+                        // yet. If Bootstrap Modal class isn't loaded
+                        // yet (the IIFE may run before Odoo's asset
+                        // bundle finishes loading Bootstrap), we need
+                        // to leave modalState at "not_shown" so the
+                        // next init() retry can attempt to open the
+                        // modal again. Otherwise modalState gets
+                        // stuck at "dismissed" and the modal never
+                        // opens even after Bootstrap is ready.
+                        var modal = getModalInstance(modalEl);
+                        if (!modal) {
+                            console.warn('WL: Bootstrap Modal not yet loaded, will retry on next init()');
+                            return;
+                        }
+
                         modalState = "showing";
                         populateAddress();
-
-                        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
                         var onShown = function () {
                             // Lazy-load MapLibre, then init the map.
@@ -495,7 +553,12 @@
                         };
                         modalEl.addEventListener('hidden.bs.modal', onHidden);
 
-                        modal.show();
+                        try {
+                            modal.show();
+                        } catch (e) {
+                            console.warn('WL: modal.show() failed:', e);
+                            modalState = 'dismissed';
+                        }
                     }
 
                     function setupModalButtons() {
@@ -506,7 +569,10 @@
                             yesBtn._wlBound = true;
                             yesBtn.addEventListener('click', function () {
                                 modalState = 'confirmed';
-                                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                                var modal = getModalInstance(modalEl);
+                                if (modal) {
+                                    try { modal.hide(); } catch (e) {}
+                                }
                             });
                         }
                         // "no" button is just an &lt;a href="/shop/address"&gt;,
@@ -602,6 +668,7 @@
                     }
                     setTimeout(init, 1000);
                     setTimeout(init, 2500);
+                    setTimeout(init, 4000);
                     //
                 })();
                 //
