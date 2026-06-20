@@ -477,167 +477,183 @@
                     //      idempotent (safe to call multiple times thanks to
                     //      the getLayer guard). ----
                     function addCustomLayers(map) {
-                        if (!map) return;
-                        if (!map.isStyleLoaded) return;
+                        if (!map) {
+                            console.log('WL: addCustomLayers skip - no map');
+                            return;
+                        }
+                        if (!map.isStyleLoaded) {
+                            console.log('WL: addCustomLayers skip - no isStyleLoaded method');
+                            return;
+                        }
                         // Do not attempt until the style is fully loaded.
                         try {
-                            if (!map.isStyleLoaded()) return;
-                        } catch (e) { return; }
-
-                        try {
-                            // 1. Desa (village) administrative boundary.
-                            //    admin_level 7 = subdistrict, 8 = village
-                            //    (desa/kelurahan in Indonesia).
-                            if (!map.getLayer('wl-desa-boundary')) {
-                                map.addLayer({
-                                    id: 'wl-desa-boundary',
-                                    type: 'line',
-                                    source: 'openmaptiles',
-                                    'source-layer': 'boundary',
-                                    filter: ['match', ['get', 'admin_level'],
-                                        ['7', '8'], true, false],
-                                    paint: {
-                                        'line-color': '#7a0c14',
-                                        'line-width': {
-                                            stops: [
-                                                [10, 0.8],
-                                                [14, 1.5],
-                                                [17, 2.5]
-                                            ]
-                                        },
-                                        'line-dasharray': [3, 2],
-                                        'line-opacity': 0.75
-                                    }
-                                });
-                            }
-
-                            // 2. House number labels (visible at zoom 17+).
-                            //    The OpenMapTiles housenumber source-layer
-                            //    contains point features with a housenumber
-                            //    field. Liberty style does not show these by
-                            //    default, so we add our own layer.
-                            if (!map.getLayer('wl-housenumber')) {
-                                map.addLayer({
-                                    id: 'wl-housenumber',
-                                    type: 'symbol',
-                                    source: 'openmaptiles',
-                                    'source-layer': 'housenumber',
-                                    minzoom: 17,
-                                    layout: {
-                                        'text-field': '{housenumber}',
-                                        'text-size': 10,
-                                        'text-font': ['Noto Sans Regular'],
-                                        'text-offset': [0, 0],
-                                        'text-anchor': 'center',
-                                        'text-allow-overlap': false
-                                    },
-                                    paint: {
-                                        'text-color': '#5a080e',
-                                        'text-halo-color': '#ffffff',
-                                        'text-halo-width': 1.6
-                                    }
-                                });
-                            }
-
-                            // 3. Landmark highlight. Bigger, bolder labels
-                            //    for the 5 Indonesian landmark categories
-                            //    the site owner asked for:
-                            //      * Indomaret/Alfamart -> shop convenience
-                            //        or supermarket
-                            //      * Masjid             -> place_of_worship
-                            //        or muslim
-                            //      * Sekolah            -> school,
-                            //        kindergarten, college
-                            //      * SPBU               -> fuel
-                            //    Uses subclass field from OpenMapTiles POI.
-                            if (!map.getLayer('wl-landmark-highlight')) {
-                                map.addLayer({
-                                    id: 'wl-landmark-highlight',
-                                    type: 'symbol',
-                                    source: 'openmaptiles',
-                                    'source-layer': 'poi',
-                                    minzoom: 12,
-                                    filter: ['match', ['get', 'subclass'],
-                                        [
-                                            'convenience',
-                                            'supermarket',
-                                            'place_of_worship',
-                                            'muslim',
-                                            'school',
-                                            'kindergarten',
-                                            'college',
-                                            'fuel'
-                                        ],
-                                        true, false],
-                                    layout: {
-                                        'text-field': ['coalesce',
-                                            ['get', 'name'],
-                                            ['get', 'name:latin'],
-                                            ['get', 'name_en'],
-                                            ''
-                                        ],
-                                        'text-size': 13,
-                                        'text-font': ['Noto Sans Bold'],
-                                        'text-offset': [0, 1.2],
-                                        'text-anchor': 'top',
-                                        'text-allow-overlap': false,
-                                        'text-ignore-placement': false
-                                    },
-                                    paint: {
-                                        'text-color': '#7a0c14',
-                                        'text-halo-color': '#fff7e0',
-                                        'text-halo-width': 2.8,
-                                        'text-opacity': {
-                                            stops: [
-                                                [12, 0.0],
-                                                [13, 0.6],
-                                                [14, 1.0]
-                                            ]
-                                        }
-                                    }
-                                });
-                            }
-
-                            // 4. Landmark icon background. Draw a small
-                            //    circle behind each highlighted landmark so
-                            //    it stands out even when the label is short.
-                            if (!map.getLayer('wl-landmark-dot')) {
-                                map.addLayer({
-                                    id: 'wl-landmark-dot',
-                                    type: 'circle',
-                                    source: 'openmaptiles',
-                                    'source-layer': 'poi',
-                                    minzoom: 12,
-                                    filter: ['match', ['get', 'subclass'],
-                                        [
-                                            'convenience',
-                                            'supermarket',
-                                            'place_of_worship',
-                                            'muslim',
-                                            'school',
-                                            'kindergarten',
-                                            'college',
-                                            'fuel'
-                                        ],
-                                        true, false],
-                                    paint: {
-                                        'circle-radius': {
-                                            stops: [
-                                                [12, 3],
-                                                [15, 5],
-                                                [17, 7]
-                                            ]
-                                        },
-                                        'circle-color': '#f5c400',
-                                        'circle-stroke-color': '#7a0c14',
-                                        'circle-stroke-width': 1.5,
-                                        'circle-opacity': 0.9
-                                    }
-                                }, 'wl-landmark-highlight');
+                            if (!map.isStyleLoaded()) {
+                                console.log('WL: addCustomLayers skip - style not yet loaded');
+                                return;
                             }
                         } catch (e) {
-                            console.warn('WL: addCustomLayers error:', e);
+                            console.log('WL: addCustomLayers skip - isStyleLoaded threw: ' + e.message);
+                            return;
                         }
+
+                        // Detect the source name (liberty uses 'openmaptiles'
+                        // but be defensive in case it changes).
+                        var srcName = 'openmaptiles';
+                        try {
+                            var srcs = map.getStyle().sources || {};
+                            if (srcs['openmaptiles']) {
+                                srcName = 'openmaptiles';
+                            } else {
+                                // pick the first source
+                                var keys = Object.keys(srcs);
+                                if (keys.length) {
+                                    srcName = keys[0];
+                                    console.log('WL: openmaptiles source not found, using: ' + srcName);
+                                }
+                            }
+                        } catch (e) {}
+
+                        console.log('WL: addCustomLayers running, source=' + srcName);
+
+                        // Helper to add a layer with individual error logging
+                        function addOne(layerConfig, beforeId) {
+                            try {
+                                if (map.getLayer(layerConfig.id)) {
+                                    return;  // already added
+                                }
+                                // Set the source name dynamically
+                                layerConfig.source = srcName;
+                                if (beforeId) {
+                                    map.addLayer(layerConfig, beforeId);
+                                } else {
+                                    map.addLayer(layerConfig);
+                                }
+                                console.log('WL: added layer ' + layerConfig.id);
+                            } catch (e) {
+                                console.warn('WL: failed to add layer ' + layerConfig.id + ': ' + e.message);
+                            }
+                        }
+
+                        // 1. Desa (village) administrative boundary.
+                        addOne({
+                            id: 'wl-desa-boundary',
+                            type: 'line',
+                            'source-layer': 'boundary',
+                            filter: ['match', ['get', 'admin_level'],
+                                ['7', '8'], true, false],
+                            paint: {
+                                'line-color': '#7a0c14',
+                                'line-width': {
+                                    stops: [
+                                        [10, 0.8],
+                                        [14, 1.5],
+                                        [17, 2.5]
+                                    ]
+                                },
+                                'line-dasharray': [3, 2],
+                                'line-opacity': 0.75
+                            }
+                        });
+
+                        // 2. House number labels (visible at zoom 17+).
+                        addOne({
+                            id: 'wl-housenumber',
+                            type: 'symbol',
+                            'source-layer': 'housenumber',
+                            minzoom: 17,
+                            layout: {
+                                'text-field': '{housenumber}',
+                                'text-size': 10,
+                                'text-font': ['Noto Sans Regular'],
+                                'text-offset': [0, 0],
+                                'text-anchor': 'center',
+                                'text-allow-overlap': false
+                            },
+                            paint: {
+                                'text-color': '#5a080e',
+                                'text-halo-color': '#ffffff',
+                                'text-halo-width': 1.6
+                            }
+                        });
+
+                        // 3. Landmark highlight.
+                        addOne({
+                            id: 'wl-landmark-highlight',
+                            type: 'symbol',
+                            'source-layer': 'poi',
+                            minzoom: 12,
+                            filter: ['match', ['get', 'subclass'],
+                                [
+                                    'convenience',
+                                    'supermarket',
+                                    'place_of_worship',
+                                    'muslim',
+                                    'school',
+                                    'kindergarten',
+                                    'college',
+                                    'fuel'
+                                ],
+                                true, false],
+                            layout: {
+                                'text-field': ['coalesce',
+                                    ['get', 'name'],
+                                    ['get', 'name:latin'],
+                                    ['get', 'name_en'],
+                                    ''
+                                ],
+                                'text-size': 13,
+                                'text-font': ['Noto Sans Bold'],
+                                'text-offset': [0, 1.2],
+                                'text-anchor': 'top',
+                                'text-allow-overlap': false,
+                                'text-ignore-placement': false
+                            },
+                            paint: {
+                                'text-color': '#7a0c14',
+                                'text-halo-color': '#fff7e0',
+                                'text-halo-width': 2.8,
+                                'text-opacity': {
+                                    stops: [
+                                        [12, 0.0],
+                                        [13, 0.6],
+                                        [14, 1.0]
+                                    ]
+                                }
+                            }
+                        });
+
+                        // 4. Landmark icon background.
+                        addOne({
+                            id: 'wl-landmark-dot',
+                            type: 'circle',
+                            'source-layer': 'poi',
+                            minzoom: 12,
+                            filter: ['match', ['get', 'subclass'],
+                                [
+                                    'convenience',
+                                    'supermarket',
+                                    'place_of_worship',
+                                    'muslim',
+                                    'school',
+                                    'kindergarten',
+                                    'college',
+                                    'fuel'
+                                ],
+                                true, false],
+                            paint: {
+                                'circle-radius': {
+                                    stops: [
+                                        [12, 3],
+                                        [15, 5],
+                                        [17, 7]
+                                    ]
+                                },
+                                'circle-color': '#f5c400',
+                                'circle-stroke-color': '#7a0c14',
+                                'circle-stroke-width': 1.5,
+                                'circle-opacity': 0.9
+                            }
+                        }, 'wl-landmark-highlight');
                     }
 
                     function initMap(lat, lng) {
@@ -669,7 +685,11 @@
                                 attributionControl: true
                             });
 
+                            // Expose for debugging (v3.10.13)
+                            window._wl_map = mapInstance;
+
                             mapInstance.on('load', function () {
+                                console.log('WL: map load event fired');
                                 applyCustomMapStyle(mapInstance);
                                 addCustomLayers(mapInstance);
                             });
