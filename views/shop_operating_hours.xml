@@ -97,6 +97,123 @@
     </record>
 
     <!--
+        Inline JS for operating hours live status (v17.0.3.10.2)
+        =====================================================
+        We bypass Odoo's asset bundle system entirely and inline a
+        small self-executing script at the end of the page. This is
+        more reliable than registering a publicWidget, which requires
+        the lazy bundle to load correctly (it doesn't on this Odoo
+        instance due to a module loading issue we couldn't fully
+        diagnose).
+
+        The script does two things:
+        1) Re-evaluates the open/closed status every 30 seconds on
+           the client. This bypasses Odoo's server-side HTML cache,
+           which could otherwise serve a stale "Buka Sekarang" badge
+           at 20:00 sharp if the cached page was rendered at 19:59.
+        2) Adds an intermediate "Akan Tutup" (Closing Soon) state
+           shown for the last 30 minutes before close_time.
+
+        Reads data attributes on .wl_oh_card and .wl_oh_mobile:
+          data-today-mode  = 'specific_hours' | 'open_24_hours' | ...
+          data-today-open  = minutes-from-midnight (e.g. '720' for 12:00)
+          data-today-close = minutes-from-midnight (e.g. '1200' for 20:00)
+    -->
+    <template id="warunglakku_operating_hours_inline_js" name="Warung Lakku: OH Live JS">
+        <script>
+<![CDATA[
+            (function () {
+                'use strict';
+                // Jakarta offset = UTC+7 = 420 minutes
+                var JAKARTA_OFFSET_MIN = 7 * 60;
+
+                function nowMinutesInJakarta() {
+                    var now = new Date();
+                    var utcMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+                    var jakartaMin = utcMin + JAKARTA_OFFSET_MIN;
+                    return ((jakartaMin % 1440) + 1440) % 1440;
+                }
+
+                function computeState(mode, openStr, closeStr) {
+                    if (mode === 'open_24_hours') return 'open';
+                    if (mode === 'specific_hours') {
+                        var openMin = parseInt(openStr, 10);
+                        var closeMin = parseInt(closeStr, 10);
+                        if (isNaN(openMin) || isNaN(closeMin)) return 'closed';
+                        var now = nowMinutesInJakarta();
+                        if (now < openMin || now >= closeMin) return 'closed';
+                        if (closeMin - now <= 30) return 'closing_soon';
+                        return 'open';
+                    }
+                    return 'closed';
+                }
+
+                var STATE_TEXT = {
+                    'open': 'Buka Sekarang',
+                    'closing_soon': 'Akan Tutup',
+                    'closed': 'Tutup'
+                };
+
+                function updateWidget(widgetEl) {
+                    if (!widgetEl) return;
+                    var mode = widgetEl.getAttribute('data-today-mode') || 'closed';
+                    var openStr = widgetEl.getAttribute('data-today-open') || '';
+                    var closeStr = widgetEl.getAttribute('data-today-close') || '';
+                    var state = computeState(mode, openStr, closeStr);
+                    var statusEls = widgetEl.querySelectorAll('.wl_oh_status, .wl_oh_mobile_status');
+                    for (var i = 0; i < statusEls.length; i++) {
+                        var statusEl = statusEls[i];
+                        if (statusEl.getAttribute('data-state') === state) continue;
+                        statusEl.setAttribute('data-state', state);
+                        statusEl.setAttribute('data-open', state === 'open' ? 'true' : 'false');
+                        var textEl = statusEl.querySelector('.wl_oh_status_text');
+                        if (textEl) textEl.textContent = STATE_TEXT[state] || 'Tutup';
+                    }
+                    if (widgetEl.classList.contains('wl_oh_mobile')) {
+                        widgetEl.setAttribute('data-open', state === 'open' ? 'true' : 'false');
+                    }
+                }
+
+                function updateAll() {
+                    var widgets = document.querySelectorAll('.wl_oh_card, .wl_oh_mobile');
+                    for (var i = 0; i < widgets.length; i++) updateWidget(widgets[i]);
+                }
+
+                function init() {
+                    setTimeout(updateAll, 200);
+                    setInterval(updateAll, 30000);
+                    document.addEventListener('visibilitychange', function () {
+                        if (!document.hidden) updateAll();
+                    });
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            })();
+]]>
+        </script>
+    </template>
+
+    <!-- Inject the inline JS at the end of /shop page body -->
+    <record model="ir.ui.view" id="shop_operating_hours_inline_js_inject">
+        <field name="name">Warung Lakku: OH Live JS Inject</field>
+        <field name="key">theme_warunglakku.shop_operating_hours_inline_js_inject</field>
+        <field name="type">qweb</field>
+        <field name="inherit_id" ref="website_sale.products"/>
+        <field name="priority">101</field>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//div[contains(@class, 'o_wsale_products_grid_table_wrapper')]" position="after">
+                    <t t-call="theme_warunglakku.warunglakku_operating_hours_inline_js"/>
+                </xpath>
+            </data>
+        </field>
+    </record>
+
+    <!--
         Mobile-only operating hours accordion
         =====================================
         The sidebar aside (#products_grid_before) is `d-none d-lg-block`
