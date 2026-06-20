@@ -8,4 +8,22 @@
         <field name="path">theme_warunglakku/static/src/scss/custom.scss</field>
     </record>
 
+    <!--
+        Register theme.js in the lazy frontend bundle. The widget
+        uses publicWidget.registry which is part of web.public.widget
+        (loaded in the lazy bundle, not the minimal one).
+
+        Without this, theme.js was never actually loaded on /shop,
+        so _initScrollEffects, _initWhatsAppButton, and
+        _initOperatingHoursLiveStatus all silently did nothing.
+
+        Fixed in v17.0.3.10.2.
+    -->
+    <record id="asset_frontend_custom_js" model="ir.asset">
+        <field name="name">Warung Lakku Custom JS</field>
+        <field name="bundle">web.assets_frontend_lazy</field>
+        <field name="directive">append</field>
+        <field name="path">theme_warunglakku/static/src/js/theme.js</field>
+    </record>
+
 </odoo>
