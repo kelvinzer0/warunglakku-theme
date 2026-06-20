@@ -1,52 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Order Confirmation Page Redesign (theme_warunglakku v17.0.3.10.8).
+        Order Confirmation Page Redesign (theme_warunglakku v17.0.3.10.9).
 
-        Two bugs reported on /shop/payment (Pilih metode pengiriman):
-
+        v17.0.3.10.8 (previous):
           BUG 1. The "Ambil di Tempat" info card STAYS VISIBLE even after
                  the user picks "Warung Lakku Delivery (Distance-based)".
+                 Fix: MutationObserver + event delegation.
+          BUG 2. Distance-based delivery with no GPS coords gives no
+                 helpful message.
+                 Fix: hidden GPS warning card with link to /shop/address.
 
-                 Root cause: the parent view
-                 website_sale_pickup_at_store.checkout_pickup_info_banner
-                 attaches a `change` event listener directly to each
-                 `<input type="radio" name="delivery_type">`. But each radio
-                 has class="pe-none" (pointer-events: none), so the user
-                 actually clicks the wrapping <li> or <label>. The radio
-                 itself never receives the click, the `change` event never
-                 fires, and the banner is never re-evaluated. On top of
-                 that, Odoo's website_sale JS replaces parts of the
-                 #delivery_method DOM via AJAX after each carrier update,
-                 which silently destroys any listeners we attached.
+        v17.0.3.10.9 (this version):
+          ENHANCEMENT. When the user picks "Warung Lakku Delivery
+          (Distance-based)" AND the partner address already has GPS
+          coordinates, automatically open a confirmation modal showing
+          an OpenStreetMap (rendered with MapLibre GL) with custom
+          Warung Lakku maroon street colors and a marker at the
+          destination. Asks "Apakah benar ini lokasi tujuannya?"
 
-                 Fix: replace the fragile per-radio listener with a
-                 MutationObserver on #delivery_method, plus event
-                 delegation on document for `change` and `click` events.
-                 This survives AJAX re-renders and catches every state
-                 transition.
+            - "Ya, Lokasi Benar"    -> close modal, continue checkout
+            - "Tidak, Atur Ulang"   -> redirect to /shop/address
 
-          BUG 2. When the user picks "Warung Lakku Delivery
-                 (Distance-based)" and the partner address has no GPS
-                 coordinates, the OSRM rate calculation fails and the user
-                 sees no helpful message. They just see the price badge
-                 stuck on "Pilih untuk menghitung tarif pengiriman" or
-                 a generic "Error" tooltip.
-
-                 Fix: add a hidden GPS warning card that becomes visible
-                 when the OSRM carrier is selected AND the price badge
-                 still shows the placeholder text (or an error keyword).
-                 The warning tells the user to pinpoint their GPS location
-                 on the address settings page, with a link to /shop/address.
-
-        Design improvements:
-          - Wrap the carrier list <ul> in a .wl-carrier-list container so
-            SCSS can give each <li> a consistent card style (icon + label
-            + price badge) that matches the design system.
-          - Replace the pickup info banner with the .wl-pickup-banner
-            design (maroon/yellow palette, fa-shopping-basket instead of
-            fa-store which does not exist in FA4).
-          - Add a new .wl-gps-warning card for the GPS pinpoint error.
+          Implementation details:
+            * Modal markup rendered via QWeb so the partner's GPS coords
+              (partner_latitude / partner_longitude) and contact_address
+              are baked in as data-* attributes.
+            * MapLibre GL JS + CSS lazy-loaded from unpkg CDN only when
+              the modal is shown, so we don't bloat the asset bundle or
+              slow down initial page load.
+            * Map style: OpenFreeMap "positron" (clean grayscale vector
+              style, free, no API key). Road layers are recolored at
+              runtime to Warung Lakku maroon (#7a0c14 for inner,
+              #5a080e for casing), water to light blue, buildings to
+              warm cream, parks to light green. This gives the "custom
+              street color" look the site owner asked for.
+            * Marker is a custom HTML element styled with the Warung
+              Lakku palette (maroon pin with yellow ring). Non-draggable:
+              the modal is for confirmation only. To change the location,
+              the user clicks "Tidak, Atur Ulang" and edits /shop/address.
+            * Modal state machine: not_shown -> showing -> confirmed |
+              dismissed. Once dismissed or confirmed, it does not
+              auto-reopen until the next page load (otherwise every
+              MutationObserver tick would reopen it).
 
         Backward compatibility:
           All element IDs the parent view uses are preserved:
@@ -55,8 +51,13 @@
             - pickup_business_hours_block (filled by QWeb, not JS)
             - pickup_addr_text            (hidden input with store addr)
             - pickup_hrs_text             (hidden input with store hrs)
-          The original banner's data is reused; only the styling +
-          visibility logic is replaced.
+          v3.10.8 additions preserved:
+            - wl_gps_warning              (warning card when no GPS)
+          v3.10.9 additions:
+            - wl_delivery_confirm_modal   (Bootstrap 5 modal)
+            - wl_delivery_map             (MapLibre map container)
+            - wl_delivery_confirm_yes     (confirm button)
+            - wl_delivery_confirm_no      (reject -> /shop/address)
     -->
     <template id="wl_payment_delivery_redesign"
               name="WL: Payment Delivery Redesign"
@@ -97,7 +98,7 @@
 
         <!-- Step 2: insert the GPS warning card right after the pickup
              banner. Hidden by default; shown via JS when the OSRM carrier
-             is selected but the price badge indicates a rate failure. -->
+             is selected but the partner has NO GPS coordinates. -->
         <xpath expr="//div[@id='pickup_info_banner']" position="after">
             <div id="wl_gps_warning" class="wl-gps-warning mt-3 d-none">
                 <div class="wl-gps-warning__body">
@@ -120,20 +121,95 @@
             </div>
         </xpath>
 
-        <!-- Step 3: replace the original <script> with a robust version
+        <!-- Step 3: insert the delivery confirmation modal AFTER the GPS
+             warning. Hidden by default; opened via JS when the OSRM
+             carrier is selected AND the partner has GPS coords.
+
+             Data attributes are populated by QWeb from the current sale
+             order's partner_shipping_id:
+               data-lat  -> partner_latitude  (0.0 if unset)
+               data-lng  -> partner_longitude (0.0 if unset)
+               data-addr -> contact_address() (formatted multi-line)
+               data-name -> partner name
+               data-phone -> partner phone or mobile -->
+        <xpath expr="//div[@id='wl_gps_warning']" position="after">
+            <div id="wl_delivery_confirm_modal"
+                 class="wl-map-modal modal fade"
+                 tabindex="-1"
+                 aria-labelledby="wl_delivery_modal_title"
+                 aria-hidden="true"
+                 t-att-data-lat="website_sale_order.partner_shipping_id.partner_latitude or 0.0"
+                 t-att-data-lng="website_sale_order.partner_shipping_id.partner_longitude or 0.0"
+                 t-att-data-addr="website_sale_order.partner_shipping_id.contact_address or ''"
+                 t-att-data-name="website_sale_order.partner_shipping_id.name or ''"
+                 t-att-data-phone="website_sale_order.partner_shipping_id.phone or website_sale_order.partner_shipping_id.mobile or ''">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content wl-map-modal__content">
+
+                        <div class="modal-header wl-map-modal__header">
+                            <h5 class="modal-title wl-map-modal__title"
+                                id="wl_delivery_modal_title">
+                                <i class="fa fa-map-marker me-2"/>
+                                Konfirmasi Lokasi Pengiriman
+                            </h5>
+                            <button type="button"
+                                    class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Tutup"/>
+                        </div>
+
+                        <div class="modal-body wl-map-modal__body">
+                            <p class="wl-map-modal__question">
+                                Apakah benar ini lokasi tujuannya?
+                            </p>
+
+                            <div id="wl_delivery_map"
+                                 class="wl-map-modal__canvas">
+                                <div class="wl-map-modal__loading">
+                                    <i class="fa fa-spinner fa-pulse me-2"/>
+                                    Memuat peta...
+                                </div>
+                            </div>
+
+                            <div class="wl-map-modal__address-wrap mt-3">
+                                <i class="fa fa-map-marker wl-map-modal__addr-icon"/>
+                                <div class="wl-map-modal__address"
+                                     id="wl_delivery_address_text"/>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer wl-map-modal__footer">
+                            <a href="/shop/address"
+                               class="btn wl-map-modal__btn-no"
+                               id="wl_delivery_confirm_no">
+                                <i class="fa fa-pencil me-1"/>
+                                Tidak, Atur Ulang
+                            </a>
+                            <button type="button"
+                                    class="btn wl-map-modal__btn-yes"
+                                    id="wl_delivery_confirm_yes">
+                                <i class="fa fa-check me-1"/>
+                                Ya, Lokasi Benar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- Step 4: replace the original <script> with a robust version
              that uses MutationObserver + event delegation so it survives
-             Odoo's AJAX re-renders. -->
+             Odoo's AJAX re-renders, AND adds the MapLibre GL modal logic. -->
         <xpath expr="//div[@id='pickup_info_banner']/following-sibling::script[1]" position="replace">
             <script>
                 //
                 (function () {
                     "use strict";
 
-                    // Error keywords that may appear in the price badge
-                    // when the OSRM rate calculation fails. Match
-                    // case-insensitively against the badge text.
+                    // ---- error keyword detection (for GPS warning) ----
                     var ERROR_KEYWORDS = [
-                        "pilih untuk menghitung",  // placeholder text
+                        "pilih untuk menghitung",
                         "error",
                         "gagal",
                         "tidak tersedia",
@@ -141,10 +217,14 @@
                         "no rate",
                         "unavailable"
                     ];
-
-                    // Indonesian Rupiah pattern so we can detect when a
-                    // real price has been calculated.
                     var PRICE_PATTERN = /Rp\s?\d|\d{3,}\s?(?:rb|ribu|jt|juta)?/i;
+
+                    // ---- modal state machine ----
+                    // not_shown -> showing -> confirmed | dismissed
+                    var modalState = "not_shown";
+                    var mapInstance = null;
+                    var mapLibreLoading = false;
+                    var mapLibreQueue = [];
 
                     function getSelectedRadio() {
                         return document.querySelector(
@@ -165,22 +245,276 @@
                     }
 
                     function isDistanceCarrier(radio) {
-                        return radio &amp;&amp; radio.getAttribute('delivery_type') === 'osrm_distance';
+                        return radio &amp;&amp;
+                               radio.getAttribute('delivery_type') === 'osrm_distance';
                     }
 
                     function priceBadgeHasError(badge) {
                         if (!badge) return true;
                         var text = (badge.textContent || '').trim().toLowerCase();
                         if (!text) return true;
-                        // If we already have a real price, it is NOT an error.
                         if (PRICE_PATTERN.test(text)) return false;
-                        // Otherwise check for explicit error keywords.
                         for (var i = 0; i &lt; ERROR_KEYWORDS.length; i++) {
                             if (text.indexOf(ERROR_KEYWORDS[i]) !== -1) return true;
                         }
                         return false;
                     }
 
+                    // ---- modal helpers ----
+                    function getModalEl() {
+                        return document.getElementById('wl_delivery_confirm_modal');
+                    }
+
+                    function getPartnerCoords() {
+                        var modal = getModalEl();
+                        if (!modal) return {lat: 0, lng: 0, hasCoords: false};
+                        var lat = parseFloat(modal.dataset.lat) || 0;
+                        var lng = parseFloat(modal.dataset.lng) || 0;
+                        // 0,0 means unset (Indonesia is never at lat=0 lng=0)
+                        var has = (lat !== 0 || lng !== 0);
+                        return {lat: lat, lng: lng, hasCoords: has};
+                    }
+
+                    function loadMapLibre(callback) {
+                        if (window.maplibregl) {
+                            callback();
+                            return;
+                        }
+                        mapLibreQueue.push(callback);
+                        if (mapLibreLoading) return;
+                        mapLibreLoading = true;
+
+                        // CSS
+                        var link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+                        document.head.appendChild(link);
+
+                        // JS
+                        var script = document.createElement('script');
+                        script.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+                        script.async = true;
+                        script.onload = function () {
+                            var q = mapLibreQueue;
+                            mapLibreQueue = [];
+                            for (var i = 0; i &lt; q.length; i++) {
+                                try { q[i](); } catch (e) { console.warn(e); }
+                            }
+                        };
+                        document.head.appendChild(script);
+                    }
+
+                    function applyCustomMapStyle(map) {
+                        if (!map || !map.getStyle) return;
+                        var layers = map.getStyle().layers || [];
+                        for (var i = 0; i &lt; layers.length; i++) {
+                            var layer = layers[i];
+                            var sl = layer['source-layer'] || '';
+                            var lid = layer.id || '';
+
+                            // Roads: maroon for inner, dark maroon for casing
+                            if (layer.type === 'line' &amp;&amp; sl === 'transportation') {
+                                var color = '#7a0c14';
+                                if (lid.indexOf('casing') !== -1) {
+                                    color = '#5a080e';
+                                } else if (lid.indexOf('minor') !== -1 ||
+                                           lid.indexOf('path') !== -1 ||
+                                           lid.indexOf('pier') !== -1) {
+                                    color = '#a02030';
+                                }
+                                try {
+                                    map.setPaintProperty(lid, 'line-color', color);
+                                } catch (e) {}
+                            }
+
+                            // Water: light blue
+                            if ((layer.type === 'fill' &amp;&amp; sl === 'water') ||
+                                (layer.type === 'line' &amp;&amp; sl === 'waterway')) {
+                                try {
+                                    if (layer.type === 'fill') {
+                                        map.setPaintProperty(lid, 'fill-color', '#cfe4f5');
+                                    } else {
+                                        map.setPaintProperty(lid, 'line-color', '#a8d0ed');
+                                    }
+                                } catch (e) {}
+                            }
+
+                            // Buildings: warm cream
+                            if (layer.type === 'fill' &amp;&amp; sl === 'building') {
+                                try {
+                                    map.setPaintProperty(lid, 'fill-color', '#fff7e0');
+                                } catch (e) {}
+                            }
+
+                            // Parks / landuse: light green
+                            if (layer.type === 'fill' &amp;&amp; sl === 'landuse') {
+                                try {
+                                    map.setPaintProperty(lid, 'fill-color', '#e8f5e8');
+                                } catch (e) {}
+                            }
+
+                            // Aeroway (runways): maroon, lighter
+                            if (layer.type === 'line' &amp;&amp; sl === 'aeroway') {
+                                try {
+                                    map.setPaintProperty(lid, 'line-color', '#b03040');
+                                } catch (e) {}
+                            }
+                        }
+                    }
+
+                    function initMap(lat, lng) {
+                        var container = document.getElementById('wl_delivery_map');
+                        if (!container) return;
+                        if (!window.maplibregl) return;
+
+                        if (mapInstance) {
+                            // Already initialized: just fly to new center
+                            try {
+                                mapInstance.flyTo({
+                                    center: [lng, lat],
+                                    zoom: 15,
+                                    duration: 800
+                                });
+                            } catch (e) {}
+                            return;
+                        }
+
+                        // Clear loading placeholder
+                        container.innerHTML = '';
+
+                        try {
+                            mapInstance = new maplibregl.Map({
+                                container: container,
+                                style: 'https://tiles.openfreemap.org/styles/positron',
+                                center: [lng, lat],
+                                zoom: 15,
+                                attributionControl: true
+                            });
+
+                            mapInstance.on('load', function () {
+                                applyCustomMapStyle(mapInstance);
+                            });
+
+                            // Re-apply on style reload
+                            mapInstance.on('styledata', function () {
+                                applyCustomMapStyle(mapInstance);
+                            });
+
+                            // Custom marker
+                            var markerEl = document.createElement('div');
+                            markerEl.className = 'wl-map-marker';
+                            markerEl.innerHTML =
+                                '&lt;div class="wl-map-marker__pin"&gt;' +
+                                '&lt;i class="fa fa-map-marker"&gt;&lt;/i&gt;' +
+                                '&lt;/div&gt;' +
+                                '&lt;div class="wl-map-marker__ring"&gt;&lt;/div&gt;';
+
+                            new maplibregl.Marker({
+                                element: markerEl,
+                                anchor: 'bottom'
+                            })
+                                .setLngLat([lng, lat])
+                                .addTo(mapInstance);
+
+                            // Nav controls
+                            mapInstance.addControl(
+                                new maplibregl.NavigationControl({visualizePitch: false}),
+                                'top-right'
+                            );
+
+                        } catch (e) {
+                            console.warn('MapLibre init failed:', e);
+                            container.innerHTML =
+                                '&lt;div class="wl-map-modal__error"&gt;' +
+                                '&lt;i class="fa fa-exclamation-triangle me-2"&gt;&lt;/i&gt;' +
+                                'Peta tidak dapat dimuat. Silakan klik ' +
+                                '&lt;strong&gt;Tidak, Atur Ulang&lt;/strong&gt; ' +
+                                'untuk memastikan lokasi Anda.&lt;/div&gt;';
+                        }
+                    }
+
+                    function populateAddress() {
+                        var modal = getModalEl();
+                        var addrEl = document.getElementById('wl_delivery_address_text');
+                        if (!modal || !addrEl) return;
+                        var addr = modal.dataset.addr || '';
+                        var name = modal.dataset.name || '';
+                        var phone = modal.dataset.phone || '';
+
+                        var html = '';
+                        if (name) {
+                            html += '&lt;strong&gt;' + escapeHtml(name) + '&lt;/strong&gt;&lt;br/&gt;';
+                        }
+                        if (addr) {
+                            html += '&lt;span style="white-space: pre-line"&gt;' +
+                                    escapeHtml(addr) + '&lt;/span&gt;';
+                        }
+                        if (phone) {
+                            html += '&lt;br/&gt;&lt;span class="text-muted"&gt;' +
+                                    '&lt;i class="fa fa-phone me-1"&gt;&lt;/i&gt;' +
+                                    escapeHtml(phone) + '&lt;/span&gt;';
+                        }
+                        addrEl.innerHTML = html;
+                    }
+
+                    function escapeHtml(s) {
+                        if (s === null || s === undefined) return '';
+                        return String(s)
+                            .replace(/&amp;/g, '&amp;amp;')
+                            .replace(/&lt;/g, '&amp;lt;')
+                            .replace(/&gt;/g, '&amp;gt;')
+                            .replace(/"/g, '&amp;quot;')
+                            .replace(/'/g, '&#39;');
+                    }
+
+                    function openDeliveryModal() {
+                        var modalEl = getModalEl();
+                        if (!modalEl) return;
+                        var coords = getPartnerCoords();
+                        if (!coords.hasCoords) return;
+
+                        modalState = "showing";
+                        populateAddress();
+
+                        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+                        var onShown = function () {
+                            // Lazy-load MapLibre, then init the map.
+                            loadMapLibre(function () {
+                                initMap(coords.lat, coords.lng);
+                            });
+                            modalEl.removeEventListener('shown.bs.modal', onShown);
+                        };
+                        modalEl.addEventListener('shown.bs.modal', onShown);
+
+                        var onHidden = function () {
+                            if (modalState === 'showing') {
+                                modalState = 'dismissed';
+                            }
+                            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                        };
+                        modalEl.addEventListener('hidden.bs.modal', onHidden);
+
+                        modal.show();
+                    }
+
+                    function setupModalButtons() {
+                        var modalEl = getModalEl();
+                        if (!modalEl) return;
+                        var yesBtn = document.getElementById('wl_delivery_confirm_yes');
+                        if (yesBtn &amp;&amp; !yesBtn._wlBound) {
+                            yesBtn._wlBound = true;
+                            yesBtn.addEventListener('click', function () {
+                                modalState = 'confirmed';
+                                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                            });
+                        }
+                        // "no" button is just an &lt;a href="/shop/address"&gt;,
+                        // no JS handler needed.
+                    }
+
+                    // ---- main banner updater (called on every change/click
+                    //      and on MutationObserver ticks) ----
                     function updateBanners() {
                         var radio = getSelectedRadio();
                         var banner = document.getElementById('pickup_info_banner');
@@ -197,13 +531,22 @@
                         // Not pickup: hide pickup banner unconditionally.
                         banner.classList.add('d-none');
 
-                        // Distance-based carrier: maybe show GPS warning.
                         if (isDistanceCarrier(radio)) {
-                            var badge = getSelectedPriceBadge(radio);
-                            if (priceBadgeHasError(badge)) {
-                                warning.classList.remove('d-none');
-                            } else {
+                            var coords = getPartnerCoords();
+                            if (coords.hasCoords) {
+                                // Has GPS: hide warning, maybe open modal.
                                 warning.classList.add('d-none');
+                                if (modalState === 'not_shown') {
+                                    openDeliveryModal();
+                                }
+                            } else {
+                                // No GPS: show warning if price badge indicates error.
+                                var badge = getSelectedPriceBadge(radio);
+                                if (priceBadgeHasError(badge)) {
+                                    warning.classList.remove('d-none');
+                                } else {
+                                    warning.classList.add('d-none');
+                                }
                             }
                         } else {
                             // Some other carrier (e.g. flat rate): no warning.
@@ -211,16 +554,14 @@
                         }
                     }
 
-                    // Re-evaluate whenever any input in #delivery_method changes.
-                    // Use event delegation on document so it survives AJAX
-                    // re-renders of the inner DOM.
+                    // ---- event delegation (survives AJAX re-renders) ----
                     function onAnyChange(evt) {
                         var target = evt.target;
                         if (!target) return;
                         if (target.name === 'delivery_type' ||
                             target.id === 'delivery_type' ||
                             (target.closest &amp;&amp; target.closest('#delivery_method'))) {
-                            // Defer one tick so Odoo's own handlers finish first.
+                            // Defer so Odoo's own handlers finish first.
                             setTimeout(updateBanners, 50);
                             setTimeout(updateBanners, 300);
                         }
@@ -228,9 +569,6 @@
                     document.addEventListener('change', onAnyChange, true);
                     document.addEventListener('click', onAnyChange, true);
 
-                    // Also watch the #delivery_method subtree for DOM mutations
-                    // (Odoo replaces parts of it after each /shop/update_carrier
-                    // AJAX call, which would otherwise destroy our listeners).
                     function setupObserver() {
                         var dm = document.getElementById('delivery_method');
                         if (!dm) return false;
@@ -247,11 +585,10 @@
                         return true;
                     }
 
-                    // Initial run + retry until #delivery_method exists.
                     function init() {
+                        setupModalButtons();
                         updateBanners();
                         if (!setupObserver()) {
-                            // DOM not ready yet; retry shortly.
                             setTimeout(init, 200);
                             setTimeout(init, 800);
                             setTimeout(init, 1500);
@@ -263,7 +600,6 @@
                     } else {
                         init();
                     }
-                    // Late retries to catch slow AJAX renders.
                     setTimeout(init, 1000);
                     setTimeout(init, 2500);
                     //

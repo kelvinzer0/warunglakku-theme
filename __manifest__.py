@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Warung Lakku Theme',
-    'version': '17.0.3.10.8',
+    'version': '17.0.3.10.9',
     'depends': ['website', 'website_sale', 'website_sale_pickup_at_store'],
     'data': [
         'views/assets.xml',
