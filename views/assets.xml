@@ -9,9 +9,9 @@
     </record>
 
     <!--
-        Register theme.js in the lazy frontend bundle. The widget
-        uses publicWidget.registry which is part of web.public.widget
-        (loaded in the lazy bundle, not the minimal one).
+        Register theme.js in the frontend bundle. The widget uses
+        publicWidget.registry which is provided by web.public.widget
+        (loaded in web.assets_frontend, NOT in the lazy bundle).
 
         Without this, theme.js was never actually loaded on /shop,
         so _initScrollEffects, _initWhatsAppButton, and
@@ -21,7 +21,7 @@
     -->
     <record id="asset_frontend_custom_js" model="ir.asset">
         <field name="name">Warung Lakku Custom JS</field>
-        <field name="bundle">web.assets_frontend_lazy</field>
+        <field name="bundle">web.assets_frontend</field>
         <field name="directive">append</field>
         <field name="path">theme_warunglakku/static/src/js/theme.js</field>
     </record>
