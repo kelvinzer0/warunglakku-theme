@@ -118,6 +118,11 @@
                             </div>
                         </nav>
                     </t>
+                    <!-- Inline JS for operating hours live status.
+                         Injected here (inside the position="before"
+                         xpath) to avoid breaking the t-if/t-else
+                         chain on the parent products_grid view. -->
+                    <t t-call="theme_warunglakku.warunglakku_operating_hours_inline_js"/>
                 </xpath>
             </data>
         </field>
