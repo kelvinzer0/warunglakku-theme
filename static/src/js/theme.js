@@ -4,7 +4,11 @@ odoo.define('theme_warunglakku.frontend', ['web.public.widget'], function (requi
     var publicWidget = require('web.public.widget');
 
     publicWidget.registry.ThemeWarungLakku = publicWidget.Widget.extend({
-        selector: '.website',
+        // #wrapwrap is Odoo 17's main frontend page wrapper. It is
+        // always present on /shop and other website pages. (Older
+        // themes used `.website` but that class is not always added
+        // in Odoo 17, so the widget would never instantiate.)
+        selector: '#wrapwrap',
         disabledInEditableMode: false,
 
         start: function () {
