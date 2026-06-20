@@ -2574,3 +2574,238 @@ details.wl_oh_mobile {
     }
 }
 
+// ============================================================
+// ORDER PAYMENT PAGE — DELIVERY CARRIER LIST (v17.0.3.10.8)
+//
+// On /shop/payment, the "Pilih metode pengiriman" section uses
+// a Bootstrap list-group with each carrier as a list-group-item.
+// We restyle each item as a card-style option to match the
+// design of .wl-pickup-option (from the address step).
+//
+// Key bug fix (JS-side, see views/payment_delivery_redesign.xml):
+//   The parent module's banner-visibility JS attached `change`
+//   listeners directly to each radio, but the radios have
+//   class="pe-none" so clicks go to the wrapping <li>/<label>,
+//   never to the radio -> the change event never fires -> the
+//   pickup info banner stays visible forever. Our new JS uses
+//   MutationObserver + event delegation to survive that.
+//
+// Here in SCSS we just make the carrier list visually consistent
+// with the rest of the checkout flow.
+// ============================================================
+
+#delivery_carrier {
+    h4 {
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        color: var(--wl-maroon-dark);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 12px !important;
+    }
+
+    #delivery_method {
+        .list-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            border: 0;
+            background: transparent;
+
+            @media (max-width: 575.98px) {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .o_delivery_carrier_select {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 16px 18px 14px;
+            border: 1.5px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            background: #ffffff;
+            cursor: pointer;
+            transition: border-color 0.18s ease, background-color 0.18s ease,
+                        box-shadow 0.18s ease;
+            margin-bottom: 0 !important;
+
+            &:hover {
+                border-color: var(--wl-maroon) !important;
+                background: #fff8f9;
+            }
+
+            // Hide the radio input visually (the whole card IS the selector)
+            input[type="radio"][name="delivery_type"] {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+                width: 0;
+                height: 0;
+            }
+
+            label {
+                font-family: 'Poppins', sans-serif !important;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #1f1f1f;
+                cursor: pointer;
+                display: block;
+                margin: 0;
+                transition: color 0.18s ease;
+                line-height: 1.3;
+
+                &::before {
+                    content: "\f07a"; // fa-shopping-basket (default for pickup)
+                    font-family: FontAwesome;
+                    font-weight: normal;
+                    font-style: normal;
+                    display: inline-block;
+                    margin-right: 8px;
+                    color: var(--wl-maroon);
+                    font-size: 1rem;
+                    vertical-align: -1px;
+                }
+            }
+
+            // Differentiate icon per carrier type via the radio's data
+            // attributes (Odoo renders delivery_type and data-is-pickup).
+            //   data-is-pickup="1"            -> fa-shopping-basket
+            //   delivery_type="osrm_distance" -> fa-truck
+            //   delivery_type="fixed"         -> fa-cube (default fallback)
+            &.o_delivery_carrier_select:has(input[delivery_type="osrm_distance"]) label::before {
+                content: "\f0d1"; // fa-truck
+            }
+
+            &.o_delivery_carrier_select:has(input[data-is-pickup="1"]) label::before {
+                content: "\f07a"; // fa-shopping-basket
+            }
+
+            &.o_delivery_carrier_select:has(input[delivery_type="fixed"]:not([data-is-pickup="1"])) label::before {
+                content: "\f0d1"; // fa-truck (default for any non-pickup fixed carrier)
+            }
+
+            .o_wsale_delivery_badge_price {
+                font-family: 'Inter', sans-serif !important;
+                font-size: 0.78rem !important;
+                font-weight: 600;
+                float: none !important;
+                display: inline-block;
+                padding: 4px 10px;
+                border-radius: 6px;
+                background: #f3f4f6;
+                color: var(--wl-maroon-dark);
+                margin-top: 4px;
+                align-self: flex-start;
+                transition: background-color 0.18s ease, color 0.18s ease;
+            }
+
+            // Selected (checked) state — solid maroon card
+            input[type="radio"]:checked ~ label,
+            &.o_delivery_carrier_selected label {
+                color: #ffffff;
+            }
+
+            input[type="radio"]:checked ~ label::before {
+                color: #ffffff;
+            }
+
+            input[type="radio"]:checked ~ .o_wsale_delivery_badge_price {
+                background: rgba(245, 196, 0, 0.95);
+                color: var(--wl-maroon-dark);
+            }
+
+            input[type="radio"]:checked ~ .o_delivery_unavailable,
+            input[type="radio"]:checked ~ .o_wsale_delivery_badge_price.text-danger {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+        }
+
+        // Visually mark the SELECTED card itself. Odoo toggles
+        // .o_delivery_carrier_selected on the <li> when a carrier is chosen,
+        // but as a fallback we also detect via :has(input:checked).
+        .o_delivery_carrier_select:has(input[type="radio"]:checked),
+        .o_delivery_carrier_select.o_delivery_carrier_selected {
+            background: var(--wl-maroon-dark) !important;
+            border-color: var(--wl-maroon-dark) !important;
+            box-shadow: 0 4px 14px rgba(122, 12, 20, 0.25);
+
+            label,
+            label::before {
+                color: #ffffff;
+            }
+
+            .o_wsale_delivery_badge_price {
+                background: rgba(245, 196, 0, 0.95);
+                color: var(--wl-maroon-dark);
+            }
+        }
+    }
+}
+
+// Hide the "remove this location" link clutter (it's hidden via d-none
+// anyway, but our reset ensures it doesn't pop in unexpectedly).
+#delivery_carrier .o_remove_order_location {
+    color: var(--wl-maroon) !important;
+}
+
+// ============================================================
+// GPS WARNING CARD (v17.0.3.10.8)
+// Shown when user picks the OSRM distance-based carrier but the
+// rate calculation failed (typically because the partner address
+// has no GPS coordinates). Tells the user to pinpoint their
+// location on the address page.
+// ============================================================
+
+.wl-gps-warning {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-left: 4px solid #ea580c;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+.wl-gps-warning__title {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #c2410c;
+    margin-bottom: 6px;
+
+    .fa {
+        color: #ea580c;
+    }
+}
+
+.wl-gps-warning__desc {
+    font-size: 0.82rem;
+    color: #374151;
+    line-height: 1.45;
+}
+
+.wl-gps-warning__btn {
+    background: var(--wl-maroon-dark);
+    color: #ffffff;
+    border: 0;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.18s ease, transform 0.18s ease;
+
+    &:hover {
+        background: var(--wl-maroon);
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+}
+
+
