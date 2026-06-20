@@ -656,6 +656,195 @@
                         }, 'wl-landmark-highlight');
                     }
 
+                    // ---- NEW v3.10.14: load enrichment GeoJSON layers from
+                    //      the wl_osm_enrichment Odoo module. Renders real
+                    //      POIs (Indomaret, masjid, sekolah, SPBU, ...) and
+                    //      building centroids from the local Odoo database
+                    //      on top of the openfreemap base tiles. ----
+                    function loadEnrichmentLayers(map, lat, lng) {
+                        if (!map || !window.maplibregl) return;
+                        if (map._wlEnrichmentLoaded) return;  // idempotent
+                        map._wlEnrichmentLoaded = true;
+
+                        // Color palette per landmark_category
+                        var COLOR_BY_CATEGORY = {
+                            'minimarket': '#1976d2',   // blue (Indomaret/Alfamart)
+                            'masjid':     '#2e7d32',   // green (place_of_worship)
+                            'sekolah':    '#f57c00',   // orange (school)
+                            'spbu':       '#c62828',   // red (fuel)
+                            'pasar':      '#6a1b9a',   // purple (market)
+                            'kesehatan':  '#00838f',   // teal (pharmacy/clinic)
+                            'lainnya':    '#546e7a'    // grey (other)
+                        };
+                        function colorFor(cat) {
+                            return COLOR_BY_CATEGORY[cat] || '#546e7a';
+                        }
+
+                        // 1. Fetch + render buildings (small grey dots)
+                        function loadBuildings() {
+                            var url = '/api/osm/geojson/buildings' +
+                                '?lat=' + encodeURIComponent(lat) +
+                                '&amp;lon=' + encodeURIComponent(lng) +
+                                '&amp;radius=3000&amp;limit=500';
+                            fetch(url, {credentials: 'same-origin'})
+                                .then(function (r) { return r.json(); })
+                                .then(function (geojson) {
+                                    if (!geojson || !geojson.features || !geojson.features.length) {
+                                        console.log('WL: enrichment buildings empty (rural area)');
+                                        return;
+                                    }
+                                    if (map.getSource('wl-enriched-buildings')) return;
+                                    map.addSource('wl-enriched-buildings', {
+                                        type: 'geojson',
+                                        data: geojson
+                                    });
+                                    map.addLayer({
+                                        id: 'wl-enriched-buildings-circle',
+                                        type: 'circle',
+                                        source: 'wl-enriched-buildings',
+                                        minzoom: 14,
+                                        paint: {
+                                            'circle-radius': {
+                                                stops: [[14, 1.5], [16, 2.5], [18, 4], [20, 6]]
+                                            },
+                                            'circle-color': '#9e9e9e',
+                                            'circle-stroke-color': '#616161',
+                                            'circle-stroke-width': 0.5,
+                                            'circle-opacity': 0.65
+                                        }
+                                    });
+                                    console.log('WL: enrichment buildings loaded: ' + geojson.features.length);
+                                })
+                                .catch(function (e) {
+                                    console.warn('WL: enrichment buildings fetch failed:', e);
+                                });
+                        }
+
+                        // 2. Fetch + render POIs (colored markers + labels + popup)
+                        function loadPois() {
+                            var url = '/api/osm/geojson/pois' +
+                                '?lat=' + encodeURIComponent(lat) +
+                                '&amp;lon=' + encodeURIComponent(lng) +
+                                '&amp;radius=5000&amp;limit=500';
+                            fetch(url, {credentials: 'same-origin'})
+                                .then(function (r) { return r.json(); })
+                                .then(function (geojson) {
+                                    if (!geojson || !geojson.features || !geojson.features.length) {
+                                        console.log('WL: enrichment POIs empty');
+                                        return;
+                                    }
+                                    if (map.getSource('wl-enriched-pois')) return;
+                                    map.addSource('wl-enriched-pois', {
+                                        type: 'geojson',
+                                        data: geojson
+                                    });
+
+                                    // Circle marker (colored by category via step expression)
+                                    var catCases = [];
+                                    Object.keys(COLOR_BY_CATEGORY).forEach(function (cat) {
+                                        catCases.push(cat);
+                                        catCases.push(COLOR_BY_CATEGORY[cat]);
+                                    });
+                                    map.addLayer({
+                                        id: 'wl-enriched-pois-circle',
+                                        type: 'circle',
+                                        source: 'wl-enriched-pois',
+                                        minzoom: 12,
+                                        paint: {
+                                            'circle-radius': {
+                                                stops: [[12, 3], [14, 5], [16, 7], [18, 9]]
+                                            },
+                                            'circle-color': ['match',
+                                                ['get', 'landmark_category']
+                                            ].concat(catCases).concat(['#546e7a']),
+                                            'circle-stroke-color': '#ffffff',
+                                            'circle-stroke-width': 1.5,
+                                            'circle-opacity': 0.95
+                                        }
+                                    });
+
+                                    // Name label (symbol)
+                                    map.addLayer({
+                                        id: 'wl-enriched-pois-label',
+                                        type: 'symbol',
+                                        source: 'wl-enriched-pois',
+                                        minzoom: 14,
+                                        layout: {
+                                            'text-field': ['get', 'name'],
+                                            'text-size': {
+                                                stops: [[14, 10], [16, 12], [18, 14]]
+                                            },
+                                            'text-font': ['Noto Sans Bold'],
+                                            'text-offset': [0, 1.4],
+                                            'text-anchor': 'top',
+                                            'text-allow-overlap': false,
+                                            'text-ignore-placement': false
+                                        },
+                                        paint: {
+                                            'text-color': '#1a1a1a',
+                                            'text-halo-color': '#ffffff',
+                                            'text-halo-width': 2.5
+                                        }
+                                    });
+
+                                    // Popup on click
+                                    var popup = new maplibregl.Popup({
+                                        closeButton: true,
+                                        closeOnClick: true,
+                                        offset: 12
+                                    });
+                                    map.on('click', 'wl-enriched-pois-circle', function (e) {
+                                        if (!e.features || !e.features.length) return;
+                                        var f = e.features[0];
+                                        var p = f.properties || {};
+                                        var html = '&lt;div style="min-width:180px;font-family:sans-serif;font-size:13px;line-height:1.5"&gt;';
+                                        html += '&lt;strong style="font-size:14px;color:#7a0c14"&gt;' +
+                                                escapeHtml(p.name || '(tanpa nama)') + '&lt;/strong&gt;&lt;br/&gt;';
+                                        if (p.landmark_category) {
+                                            html += '&lt;span style="color:#666"&gt;Kategori: &lt;/span&gt;' +
+                                                    escapeHtml(p.landmark_category) + '&lt;br/&gt;';
+                                        }
+                                        if (p.subtype) {
+                                            html += '&lt;span style="color:#666"&gt;Tipe: &lt;/span&gt;' +
+                                                    escapeHtml(p.subtype) + '&lt;br/&gt;';
+                                        }
+                                        if (p.phone) {
+                                            html += '&lt;i class="fa fa-phone" style="color:#1976d2"&gt;&lt;/i&gt; ' +
+                                                    escapeHtml(p.phone) + '&lt;br/&gt;';
+                                        }
+                                        if (p.rating) {
+                                            html += '&lt;i class="fa fa-star" style="color:#f5c400"&gt;&lt;/i&gt; ' +
+                                                    p.rating + (p.reviews ? ' (' + p.reviews + ' ulasan)' : '') + '&lt;br/&gt;';
+                                        }
+                                        if (p.distance_m !== undefined &amp;&amp; p.distance_m !== null) {
+                                            html += '&lt;span style="color:#666"&gt;Jarak: &lt;/span&gt;' +
+                                                    p.distance_m + ' m&lt;br/&gt;';
+                                        }
+                                        html += '&lt;/div&gt;';
+                                        popup.setLngLat(f.geometry.coordinates)
+                                            .setHTML(html)
+                                            .addTo(map);
+                                    });
+
+                                    // Cursor pointer on hover
+                                    map.on('mouseenter', 'wl-enriched-pois-circle', function () {
+                                        map.getCanvas().style.cursor = 'pointer';
+                                    });
+                                    map.on('mouseleave', 'wl-enriched-pois-circle', function () {
+                                        map.getCanvas().style.cursor = '';
+                                    });
+
+                                    console.log('WL: enrichment POIs loaded: ' + geojson.features.length);
+                                })
+                                .catch(function (e) {
+                                    console.warn('WL: enrichment POIs fetch failed:', e);
+                                });
+                        }
+
+                        loadBuildings();
+                        loadPois();
+                    }
+
                     function initMap(lat, lng) {
                         var container = document.getElementById('wl_delivery_map');
                         if (!container) return;
@@ -692,12 +881,22 @@
                                 console.log('WL: map load event fired');
                                 applyCustomMapStyle(mapInstance);
                                 addCustomLayers(mapInstance);
+                                // NEW v3.10.14: load enrichment GeoJSON from
+                                // wl_osm_enrichment module (/api/osm/geojson/*).
+                                // Renders real Binangun POIs + buildings on
+                                // top of the openfreemap base tiles.
+                                loadEnrichmentLayers(mapInstance, lat, lng);
                             });
 
                             // Re-apply on style reload
                             mapInstance.on('styledata', function () {
                                 applyCustomMapStyle(mapInstance);
                                 addCustomLayers(mapInstance);
+                                // Note: enrichment layers are NOT re-added
+                                // here because they have their own GeoJSON
+                                // sources that survive style changes. Adding
+                                // them again would throw "source already
+                                // exists" errors.
                             });
 
                             // Custom marker
