@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Pickup Mode Selector Redesign (theme_warunglakku v17.0.3.10.7).
+
+        Why this override exists:
+          The default UI in website_sale_pickup_at_store.checkout_pickup_mode_toggle
+          has three problems reported by the site owner:
+
+            1. Icon inconsistency: the "Pengiriman ke alamat" option uses
+               fa-truck (which exists in FontAwesome 4, the version Odoo 17
+               ships), but "Ambil di Tempat" uses fa-store which is NOT in
+               FA4, so only the truck icon renders. The pickup option
+               appears to have no icon at all.
+
+            2. Too rounded: both options use Bootstrap .rounded-pill
+               (border-radius: 50rem) which looks bulbous and out of place
+               in a form context.
+
+            3. Design system mismatch: the wrapper card uses a purple
+               left-accent (#714B67) and gray background (#fafafa), neither
+               of which belong to the Warung Lakku maroon/yellow palette
+               defined in primary_variables.scss.
+
+        Fix strategy:
+          Inherit the pickup_at_store view (priority=99, applies AFTER the
+          parent view at priority=16) and replace the entire
+          #pickup_mode_card div with a redesigned card-based selector:
+
+            - Card-style options (NOT pill buttons) with 8px radius.
+            - Both options get a centered FontAwesome 4 icon at top:
+                delivery -> fa-truck
+                pickup   -> fa-shopping-basket  (FA4-compatible replacement)
+            - Active state: solid maroon background + white text/icons
+              + yellow check badge in the top-right corner.
+            - Inactive state: white background, gray border, maroon icon,
+              dark text. Hover: subtle maroon tint + maroon border.
+            - Two-column grid on desktop, single column on mobile.
+            - Header label uses Poppins (matches the design system).
+
+        Backward compatibility:
+          All IDs referenced by the parent view <script> are preserved:
+            - pickup_at_store_input   (hidden flag submitted with form)
+            - pickup_mode_selector    (data container with store addr/hours)
+            - pickup_mode_btn_group   (the option group wrapper)
+            - pickup_mode_delivery    (radio)
+            - pickup_mode_pickup      (radio)
+            - pickup_store_banner     (info banner shown when pickup selected)
+            - pickup_store_address_text  (filled by JS)
+            - pickup_business_hours_text (filled by JS)
+          So the parent JS continues to work without modification.
+    -->
+    <template id="wl_pickup_mode_redesign"
+              name="WL: Pickup Mode Selector Redesign"
+              inherit_id="website_sale_pickup_at_store.checkout_pickup_mode_toggle"
+              priority="99">
+        <xpath expr="//div[@id='pickup_mode_card']" position="replace">
+
+            <div id="pickup_mode_card" class="wl-pickup-card mb-4">
+                <div id="pickup_mode_selector"
+                     class="wl-pickup-mode"
+                     t-att-data-store-address="pickup_addr"
+                     t-att-data-store-hours="pickup_hrs">
+
+                    <!-- Section header -->
+                    <div class="wl-pickup-mode__header">
+                        <span class="wl-pickup-mode__title">
+                            <i class="fa fa-truck"/>
+                            Mode Pengiriman
+                        </span>
+                    </div>
+
+                    <!-- Two-option grid (kept id=pickup_mode_btn_group so any
+                         legacy CSS targeting it still applies harmlessly). -->
+                    <div class="wl-pickup-mode__grid"
+                         id="pickup_mode_btn_group"
+                         role="group">
+
+                        <!-- Option 1: Delivery -->
+                        <input type="radio"
+                               class="btn-check"
+                               name="pickup_mode_radio"
+                               id="pickup_mode_delivery"
+                               value="delivery"
+                               checked="checked"
+                               autocomplete="off"/>
+                        <label class="wl-pickup-option"
+                               for="pickup_mode_delivery">
+                            <span class="wl-pickup-option__check">
+                                <i class="fa fa-check-circle"/>
+                            </span>
+                            <span class="wl-pickup-option__icon">
+                                <i class="fa fa-truck"/>
+                            </span>
+                            <span class="wl-pickup-option__label">
+                                Pengiriman ke Alamat
+                            </span>
+                            <span class="wl-pickup-option__hint">
+                                Diantar ke alamat Anda
+                            </span>
+                        </label>
+
+                        <!-- Option 2: Pickup at store (uses fa-shopping-basket
+                             because fa-store does NOT exist in FontAwesome 4,
+                             which is the version Odoo 17 ships). -->
+                        <input type="radio"
+                               class="btn-check"
+                               name="pickup_mode_radio"
+                               id="pickup_mode_pickup"
+                               value="pickup"
+                               autocomplete="off"/>
+                        <label class="wl-pickup-option"
+                               for="pickup_mode_pickup">
+                            <span class="wl-pickup-option__check">
+                                <i class="fa fa-check-circle"/>
+                            </span>
+                            <span class="wl-pickup-option__icon">
+                                <i class="fa fa-shopping-basket"/>
+                            </span>
+                            <span class="wl-pickup-option__label">
+                                Ambil di Tempat
+                            </span>
+                            <span class="wl-pickup-option__hint">
+                                Ambil langsung di Warung Lakku
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Helper text -->
+                    <p class="wl-pickup-mode__hint text-muted mb-0 mt-3">
+                        Pilih bagaimana Anda ingin menerima pesanan.
+                    </p>
+
+                    <!-- Store info banner (shown via JS when pickup selected).
+                         Kept the same id and inner ids as the parent view. -->
+                    <div id="pickup_store_banner"
+                         class="wl-pickup-banner mt-3 d-none">
+                        <div class="wl-pickup-banner__body">
+                            <h6 class="wl-pickup-banner__title">
+                                <i class="fa fa-shopping-basket me-2"/>
+                                Ambil di Tempat — Warung Lakku
+                            </h6>
+                            <p class="wl-pickup-banner__desc mb-1">
+                                <strong>Gratis ongkir</strong> — pesanan
+                                diambil langsung di toko.
+                            </p>
+                            <div class="wl-pickup-banner__info small text-muted"
+                                 id="pickup_store_address_text"/>
+                            <div class="wl-pickup-banner__info small text-muted"
+                                 id="pickup_business_hours_text"/>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </xpath>
+    </template>
+</odoo>

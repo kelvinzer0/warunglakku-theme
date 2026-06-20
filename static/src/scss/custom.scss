@@ -2381,3 +2381,196 @@ details.wl_oh_mobile {
         margin: 0 0 14px 0;
     }
 }
+
+// ============================================================
+// PICKUP MODE SELECTOR REDESIGN (v17.0.3.10.7)
+//
+// Replaces the default pill-button UI from
+// website_sale_pickup_at_store.checkout_pickup_mode_toggle.
+//
+// Why override:
+//   1. fa-store does NOT exist in FontAwesome 4 (Odoo 17 ships FA4),
+//      so the "Ambil di Tempat" pill rendered without an icon while
+//      "Pengiriman ke alamat" (fa-truck) had one. Now both options use
+//      FA4-compatible icons inside card-style options.
+//   2. The original used Bootstrap .rounded-pill (50rem radius) which
+//      looked bulbous in a form context. We use 8px radius instead.
+//   3. The original wrapper card used a purple left-accent (#714B67)
+//      that did not belong to the Warung Lakku maroon/yellow palette.
+//      The new design uses the maroon/yellow palette exclusively.
+// ============================================================
+
+.wl-pickup-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.wl-pickup-mode__header {
+    margin-bottom: 14px;
+}
+
+.wl-pickup-mode__title {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--wl-maroon-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    .fa {
+        font-size: 0.95rem;
+        color: var(--wl-maroon);
+    }
+}
+
+.wl-pickup-mode__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.wl-pickup-mode__hint {
+    font-size: 0.78rem;
+}
+
+// Each selectable option (card style, not pill button)
+.wl-pickup-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 18px 14px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease,
+                box-shadow 0.18s ease;
+    user-select: none;
+}
+
+.wl-pickup-option:hover {
+    border-color: var(--wl-maroon);
+    background: #fff8f9;
+}
+
+.wl-pickup-option__icon {
+    font-size: 1.6rem;
+    color: var(--wl-maroon);
+    margin-bottom: 10px;
+    line-height: 1;
+    transition: color 0.18s ease;
+}
+
+.wl-pickup-option__label {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1f1f1f;
+    margin-bottom: 4px;
+    transition: color 0.18s ease;
+}
+
+.wl-pickup-option__hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    transition: color 0.18s ease;
+}
+
+// Yellow check badge in top-right corner (hidden until selected)
+.wl-pickup-option__check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 1.15rem;
+    color: var(--wl-yellow);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+// Active (selected) state: solid maroon bg + white text + visible check
+.wl-pickup-mode__grid .btn-check:checked + .wl-pickup-option {
+    background: var(--wl-maroon-dark);
+    border-color: var(--wl-maroon-dark);
+    box-shadow: 0 4px 14px rgba(122, 12, 20, 0.25);
+}
+
+.wl-pickup-mode__grid .btn-check:checked + .wl-pickup-option
+    .wl-pickup-option__icon {
+    color: #ffffff;
+}
+
+.wl-pickup-mode__grid .btn-check:checked + .wl-pickup-option
+    .wl-pickup-option__label {
+    color: #ffffff;
+}
+
+.wl-pickup-mode__grid .btn-check:checked + .wl-pickup-option
+    .wl-pickup-option__hint {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.wl-pickup-mode__grid .btn-check:checked + .wl-pickup-option
+    .wl-pickup-option__check {
+    opacity: 1;
+}
+
+// Keyboard focus ring for accessibility
+.wl-pickup-mode__grid .btn-check:focus-visible
+    + .wl-pickup-option {
+    outline: 2px solid var(--wl-maroon);
+    outline-offset: 2px;
+}
+
+// Store info banner (shown when pickup is selected)
+.wl-pickup-banner {
+    background: #f6fdf7;
+    border: 1px solid #d1fae5;
+    border-left: 4px solid #16a34a;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+.wl-pickup-banner__title {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #16a34a;
+    margin-bottom: 6px;
+}
+
+.wl-pickup-banner__desc {
+    font-size: 0.82rem;
+    color: #374151;
+}
+
+// Mobile: stack options vertically
+@media (max-width: 575.98px) {
+    .wl-pickup-mode__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wl-pickup-option {
+        flex-direction: row;
+        text-align: left;
+        padding: 14px 16px;
+    }
+
+    .wl-pickup-option__icon {
+        font-size: 1.4rem;
+        margin-bottom: 0;
+        margin-right: 14px;
+    }
+
+    .wl-pickup-option__label {
+        margin-bottom: 2px;
+    }
+}
+
