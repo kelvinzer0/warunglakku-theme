@@ -11,6 +11,28 @@
                  helpful message.
                  Fix: hidden GPS warning card with link to /shop/address.
 
+        v17.0.3.10.13 (current):
+          ENHANCEMENT. Switch the map style from OpenFreeMap
+          positron (minimal, no POIs) to liberty (full-featured:
+          POIs, building labels, place labels, admin boundaries).
+          Add three custom layers on top of liberty:
+            * wl-desa-boundary  - village (admin_level 7, 8)
+              boundary lines in maroon dashed style.
+            * wl-housenumber    - house number text labels
+              (visible at zoom 17 and above).
+            * wl-landmark-highlight - bold maroon labels for
+              the 5 Indonesian landmark types the site owner
+              asked for: Indomaret/Alfamart (shop convenience
+              or supermarket), Masjid (place_of_worship/muslim),
+              Sekolah (school/kindergarten/college), and SPBU
+              (fuel).
+          Also bump initial zoom from 15 to 16 so the user can
+          see nearby POIs and building details immediately.
+          Existing maroon road/water/building/park recoloring
+          is preserved. POI labels, building name labels, place
+          labels, and road labels are recolored to maroon text
+          with white halo for readability on the maroon roads.
+
         v17.0.3.10.9 (this version):
           ENHANCEMENT. When the user picks "Warung Lakku Delivery
           (Distance-based)" AND the partner address already has GPS
@@ -364,10 +386,11 @@
                                 } catch (e) {}
                             }
 
-                            // Buildings: warm cream
+                            // Buildings: warm cream fill
                             if (layer.type === 'fill' &amp;&amp; sl === 'building') {
                                 try {
                                     map.setPaintProperty(lid, 'fill-color', '#fff7e0');
+                                    map.setPaintProperty(lid, 'fill-opacity', 0.9);
                                 } catch (e) {}
                             }
 
@@ -384,6 +407,236 @@
                                     map.setPaintProperty(lid, 'line-color', '#b03040');
                                 } catch (e) {}
                             }
+
+                            // NEW v3.10.13: Admin boundary lines.
+                            // Recolor country/province boundaries to subtle
+                            // maroon. Desa (village) boundaries get a stronger
+                            // maroon dashed style via a custom layer in
+                            // addCustomLayers() below.
+                            if (layer.type === 'line' &amp;&amp; sl === 'boundary') {
+                                try {
+                                    map.setPaintProperty(lid, 'line-color', '#7a0c14');
+                                    map.setPaintProperty(lid, 'line-opacity', 0.4);
+                                } catch (e) {}
+                            }
+
+                            // NEW v3.10.13: POI labels. Recolor text to
+                            // dark maroon with white halo so it pops on the
+                            // maroon roads. Bump text-size up a notch.
+                            if (layer.type === 'symbol' &amp;&amp; sl === 'poi') {
+                                try {
+                                    map.setPaintProperty(lid, 'text-color', '#5a080e');
+                                    map.setPaintProperty(lid, 'text-halo-color', '#ffffff');
+                                    map.setPaintProperty(lid, 'text-halo-width', 2);
+                                } catch (e) {}
+                                try {
+                                    map.setLayoutProperty(lid, 'text-size', 12);
+                                } catch (e) {}
+                            }
+
+                            // NEW v3.10.13: Building name labels. Make
+                            // them maroon with cream halo.
+                            if (layer.type === 'symbol' &amp;&amp; sl === 'building') {
+                                try {
+                                    map.setPaintProperty(lid, 'text-color', '#7a0c14');
+                                    map.setPaintProperty(lid, 'text-halo-color', '#fff7e0');
+                                    map.setPaintProperty(lid, 'text-halo-width', 1.8);
+                                } catch (e) {}
+                                try {
+                                    map.setLayoutProperty(lid, 'text-size', 11);
+                                } catch (e) {}
+                            }
+
+                            // NEW v3.10.13: Place labels (city/town/village).
+                            // Dark maroon text with white halo for readability.
+                            if (layer.type === 'symbol' &amp;&amp; sl === 'place') {
+                                try {
+                                    map.setPaintProperty(lid, 'text-color', '#3a0508');
+                                    map.setPaintProperty(lid, 'text-halo-color', '#ffffff');
+                                    map.setPaintProperty(lid, 'text-halo-width', 2.5);
+                                } catch (e) {}
+                            }
+
+                            // NEW v3.10.13: Road labels (street names).
+                            // White text with dark halo so they are readable
+                            // on the maroon road background.
+                            if (layer.type === 'symbol' &amp;&amp;
+                                (sl === 'transportation_name' || lid.indexOf('road-label') !== -1)) {
+                                try {
+                                    map.setPaintProperty(lid, 'text-color', '#ffffff');
+                                    map.setPaintProperty(lid, 'text-halo-color', '#5a080e');
+                                    map.setPaintProperty(lid, 'text-halo-width', 1.8);
+                                } catch (e) {}
+                            }
+                        }
+                    }
+
+                    // ---- NEW v3.10.13: custom layers for desa boundaries,
+                    //      house numbers, and Indonesian landmark highlights.
+                    //      These are added AFTER the style loads and are
+                    //      idempotent (safe to call multiple times thanks to
+                    //      the getLayer guard). ----
+                    function addCustomLayers(map) {
+                        if (!map) return;
+                        if (!map.isStyleLoaded) return;
+                        // Do not attempt until the style is fully loaded.
+                        try {
+                            if (!map.isStyleLoaded()) return;
+                        } catch (e) { return; }
+
+                        try {
+                            // 1. Desa (village) administrative boundary.
+                            //    admin_level 7 = subdistrict, 8 = village
+                            //    (desa/kelurahan in Indonesia).
+                            if (!map.getLayer('wl-desa-boundary')) {
+                                map.addLayer({
+                                    id: 'wl-desa-boundary',
+                                    type: 'line',
+                                    source: 'openmaptiles',
+                                    'source-layer': 'boundary',
+                                    filter: ['match', ['get', 'admin_level'],
+                                        ['7', '8'], true, false],
+                                    paint: {
+                                        'line-color': '#7a0c14',
+                                        'line-width': {
+                                            stops: [
+                                                [10, 0.8],
+                                                [14, 1.5],
+                                                [17, 2.5]
+                                            ]
+                                        },
+                                        'line-dasharray': [3, 2],
+                                        'line-opacity': 0.75
+                                    }
+                                });
+                            }
+
+                            // 2. House number labels (visible at zoom 17+).
+                            //    The OpenMapTiles housenumber source-layer
+                            //    contains point features with a housenumber
+                            //    field. Liberty style does not show these by
+                            //    default, so we add our own layer.
+                            if (!map.getLayer('wl-housenumber')) {
+                                map.addLayer({
+                                    id: 'wl-housenumber',
+                                    type: 'symbol',
+                                    source: 'openmaptiles',
+                                    'source-layer': 'housenumber',
+                                    minzoom: 17,
+                                    layout: {
+                                        'text-field': '{housenumber}',
+                                        'text-size': 10,
+                                        'text-font': ['Noto Sans Regular'],
+                                        'text-offset': [0, 0],
+                                        'text-anchor': 'center',
+                                        'text-allow-overlap': false
+                                    },
+                                    paint: {
+                                        'text-color': '#5a080e',
+                                        'text-halo-color': '#ffffff',
+                                        'text-halo-width': 1.6
+                                    }
+                                });
+                            }
+
+                            // 3. Landmark highlight. Bigger, bolder labels
+                            //    for the 5 Indonesian landmark categories
+                            //    the site owner asked for:
+                            //      * Indomaret/Alfamart -> shop convenience
+                            //        or supermarket
+                            //      * Masjid             -> place_of_worship
+                            //        or muslim
+                            //      * Sekolah            -> school,
+                            //        kindergarten, college
+                            //      * SPBU               -> fuel
+                            //    Uses subclass field from OpenMapTiles POI.
+                            if (!map.getLayer('wl-landmark-highlight')) {
+                                map.addLayer({
+                                    id: 'wl-landmark-highlight',
+                                    type: 'symbol',
+                                    source: 'openmaptiles',
+                                    'source-layer': 'poi',
+                                    minzoom: 12,
+                                    filter: ['match', ['get', 'subclass'],
+                                        [
+                                            'convenience',
+                                            'supermarket',
+                                            'place_of_worship',
+                                            'muslim',
+                                            'school',
+                                            'kindergarten',
+                                            'college',
+                                            'fuel'
+                                        ],
+                                        true, false],
+                                    layout: {
+                                        'text-field': ['coalesce',
+                                            ['get', 'name'],
+                                            ['get', 'name:latin'],
+                                            ['get', 'name_en'],
+                                            ''
+                                        ],
+                                        'text-size': 13,
+                                        'text-font': ['Noto Sans Bold'],
+                                        'text-offset': [0, 1.2],
+                                        'text-anchor': 'top',
+                                        'text-allow-overlap': false,
+                                        'text-ignore-placement': false
+                                    },
+                                    paint: {
+                                        'text-color': '#7a0c14',
+                                        'text-halo-color': '#fff7e0',
+                                        'text-halo-width': 2.8,
+                                        'text-opacity': {
+                                            stops: [
+                                                [12, 0.0],
+                                                [13, 0.6],
+                                                [14, 1.0]
+                                            ]
+                                        }
+                                    }
+                                });
+                            }
+
+                            // 4. Landmark icon background. Draw a small
+                            //    circle behind each highlighted landmark so
+                            //    it stands out even when the label is short.
+                            if (!map.getLayer('wl-landmark-dot')) {
+                                map.addLayer({
+                                    id: 'wl-landmark-dot',
+                                    type: 'circle',
+                                    source: 'openmaptiles',
+                                    'source-layer': 'poi',
+                                    minzoom: 12,
+                                    filter: ['match', ['get', 'subclass'],
+                                        [
+                                            'convenience',
+                                            'supermarket',
+                                            'place_of_worship',
+                                            'muslim',
+                                            'school',
+                                            'kindergarten',
+                                            'college',
+                                            'fuel'
+                                        ],
+                                        true, false],
+                                    paint: {
+                                        'circle-radius': {
+                                            stops: [
+                                                [12, 3],
+                                                [15, 5],
+                                                [17, 7]
+                                            ]
+                                        },
+                                        'circle-color': '#f5c400',
+                                        'circle-stroke-color': '#7a0c14',
+                                        'circle-stroke-width': 1.5,
+                                        'circle-opacity': 0.9
+                                    }
+                                }, 'wl-landmark-highlight');
+                            }
+                        } catch (e) {
+                            console.warn('WL: addCustomLayers error:', e);
                         }
                     }
 
@@ -397,7 +650,7 @@
                             try {
                                 mapInstance.flyTo({
                                     center: [lng, lat],
-                                    zoom: 15,
+                                    zoom: 16,
                                     duration: 800
                                 });
                             } catch (e) {}
@@ -410,19 +663,21 @@
                         try {
                             mapInstance = new maplibregl.Map({
                                 container: container,
-                                style: 'https://tiles.openfreemap.org/styles/positron',
+                                style: 'https://tiles.openfreemap.org/styles/liberty',
                                 center: [lng, lat],
-                                zoom: 15,
+                                zoom: 16,
                                 attributionControl: true
                             });
 
                             mapInstance.on('load', function () {
                                 applyCustomMapStyle(mapInstance);
+                                addCustomLayers(mapInstance);
                             });
 
                             // Re-apply on style reload
                             mapInstance.on('styledata', function () {
                                 applyCustomMapStyle(mapInstance);
+                                addCustomLayers(mapInstance);
                             });
 
                             // Custom marker
