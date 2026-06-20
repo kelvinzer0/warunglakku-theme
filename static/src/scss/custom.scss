@@ -687,6 +687,269 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // ============================================================
+// MODERN MOBILE HAMBURGER MENU (v17.0.3.10.5)
+//
+// Layering approach: keep ALL existing Odoo / Bootstrap classes
+// intact (navbar-toggler, navbar-toggler-icon, offcanvas,
+// offcanvas-end, o_navbar_mobile, btn-close, etc.). Layer
+// modern styles on top via higher-specificity selectors so the
+// new rules win without modifying or removing the existing
+// rules above. Easy to roll back by deleting this block.
+//
+// Why the old menu looked "jadul" (old-fashioned):
+//   1. Hamburger button had a 1px solid white-ish border on a
+//      transparent background — Bootstrap 5 default square box
+//      look from 2021.
+//   2. Icon used Bootstrap's default embedded SVG (thin dark
+//      lines made white via filter:invert). SVG lines don't
+//      scale crisply at sub-pixel sizes and can't be animated.
+//   3. Offcanvas panel was full-width (375px on iPhone) plain
+//      white with no shadow, no rounded corners, no depth.
+//   4. Backdrop was Bootstrap's default solid black 50% — flat,
+//      no blur, no parallax depth cue.
+//   5. Close button was Bootstrap's default 16px X icon,
+//      hard to tap on mobile.
+//   6. Menu items had small 10px 12px padding (below the
+//      44px Apple/Google touch target minimum).
+//
+// What this block changes:
+//   1. Hamburger button: 44x44px, rounded 12px corners, subtle
+//      white-tint background (rgba(255,255,255,0.12)), active
+//      scale(0.92) press animation.
+//   2. Hamburger icon: 3 CSS-drawn white lines (22x16px) using
+//      pseudo-elements + a gradient middle line. Crisp at any
+//      DPI. Animates to X (rotate 45deg/-45deg, middle hidden)
+//      when the offcanvas is open, via body:has() selector.
+//   3. Offcanvas panel: max-width 320px, width 85vw (page
+//      visible behind), 20px rounded left corners, soft shadow
+//      on left edge, smoother slide-in cubic-bezier.
+//   4. Backdrop: dark rgba(15,8,12,0.45) + backdrop-filter
+//      blur(4px) for modern depth (iOS-style).
+//   5. Close button: 40x40px circular button with subtle maroon
+//      tint, 90deg rotate on hover, scale(0.92) on active.
+//   6. Menu items: 14px 18px padding (meets 44px touch target),
+//      maroon left-border accent (3px box-shadow inset) on
+//      active + hover states, smoother transitions.
+//
+// Specificity note: existing rules use 0,2,0 specificity
+// (e.g. `.o_header_mobile .navbar-toggler`). New rules use
+// `header.o_header_mobile .navbar-toggler` (0,2,1) so they win
+// without needing more !important than necessary.
+// ============================================================
+
+@media (max-width: 991.98px) {
+    // 1) HAMBURGER BUTTON — clean rounded icon-only button.
+    //    Note: o_header_mobile is on the <nav> inside <header>, NOT on
+    //    the <header> element itself. Use descendant selector.
+    header .o_header_mobile .navbar-toggler,
+    header .o_header_mobile button.nav-link.btn[data-bs-toggle="offcanvas"] {
+        border: 0 !important;
+        background-color: rgba(255, 255, 255, 0.12) !important;
+        border-radius: 12px !important;
+        padding: 0 !important;
+        width: 44px !important;
+        height: 44px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: background-color 0.2s ease, transform 0.15s ease !important;
+
+        &:active {
+            transform: scale(0.92) !important;
+            background-color: rgba(255, 255, 255, 0.22) !important;
+        }
+
+        &:focus {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25) !important;
+            outline: none !important;
+        }
+
+        // Hover (desktop sized mobile, e.g. tablets in portrait)
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.20) !important;
+        }
+    }
+
+    // 2) HAMBURGER ICON — 3 CSS lines (replaces Bootstrap's SVG)
+    //    Top + bottom lines via ::before / ::after pseudo-elements.
+    //    Middle line via the element's own background-image gradient.
+    //    All 3 lines are 2px tall, 22px wide, white (currentColor would
+    //    inherit, but on dark header we want explicit white).
+    header .o_header_mobile .navbar-toggler .navbar-toggler-icon,
+    header .o_header_mobile button.nav-link.btn .navbar-toggler-icon {
+        // Clear Bootstrap's default SVG (set earlier as filter:invert(1))
+        background-image: none !important;
+        background-color: transparent !important;
+        filter: none !important;
+
+        // Container size for 3 lines
+        width: 22px !important;
+        height: 16px !important;
+        position: relative !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+
+        // MIDDLE line — 2px tall, vertically centered.
+        // Drawn as a 4-stop linear-gradient: transparent 0-7px,
+        // white 7-9px, transparent 9-16px. (height is 16px so middle
+        // line is at y=7-9, centered with 7px gap top + 7px gap bottom.)
+        background-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 7px,
+            #ffffff 7px,
+            #ffffff 9px,
+            transparent 9px
+        ) !important;
+        background-size: 100% 100% !important;
+        background-repeat: no-repeat !important;
+
+        // TOP + BOTTOM lines via pseudo-elements (each 2px tall)
+        &::before,
+        &::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 2px !important;
+            background-color: #ffffff !important;
+            border-radius: 1px !important;
+            transform-origin: center !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        background-color 0.2s ease !important;
+        }
+
+        // TOP line at y=0, BOTTOM line at y=14 (16 - 2 = 14)
+        &::before { top: 0 !important; }
+        &::after  { top: 14px !important; }
+    }
+
+    // 2b) MORPH TO X — when the offcanvas is open.
+    //     Bootstrap 5 adds `.show` class to the .offcanvas element
+    //     when it's visible. We use the modern `:has()` selector
+    //     (supported in all major browsers since 2023) to detect
+    //     this state from the body element and animate the icon.
+    //     Top line rotates 45deg, bottom line rotates -45deg, both
+    //     move to vertical center (y=7px), middle line hidden.
+    body:has(#top_menu_collapse_mobile.show) {
+        header .o_header_mobile .navbar-toggler .navbar-toggler-icon,
+        header .o_header_mobile button.nav-link.btn .navbar-toggler-icon {
+            background-image: none !important;  // hide middle line
+
+            &::before {
+                top: 7px !important;
+                transform: rotate(45deg) !important;
+            }
+
+            &::after {
+                top: 7px !important;
+                transform: rotate(-45deg) !important;
+            }
+        }
+    }
+
+    // 3) OFFCANVAS PANEL — slimmer, rounded, shadowed
+    .offcanvas.offcanvas-end.o_navbar_mobile,
+    .offcanvas.offcanvas-end {
+        // Slimmer than full-width: max 320px, but at most 85vw
+        // (so on a 375px iPhone, panel is 319px and the user sees
+        // a 56px sliver of the page behind — depth cue).
+        max-width: 320px !important;
+        width: 85vw !important;
+        border-left: 0 !important;
+        border-top-left-radius: 20px !important;
+        border-bottom-left-radius: 20px !important;
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18) !important;
+        // Smoother slide-in (iOS-style ease)
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
+    }
+
+    // 4) BACKDROP — blurred dark overlay for depth
+    .offcanvas-backdrop,
+    .offcanvas-backdrop.fade.show,
+    .offcanvas-backdrop.show {
+        // Bootstrap default: solid black 50% opacity. Replace with
+        // a slightly darker tint + blur (modern iOS / Android pattern).
+        background-color: rgba(15, 8, 12, 0.45) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        opacity: 1 !important;
+        transition: opacity 0.3s ease !important;
+    }
+
+    // 5) CLOSE BUTTON — large circular with hover-rotate
+    .offcanvas-header .btn-close,
+    .o_navbar_mobile .offcanvas-header .btn-close {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        background-color: rgba(122, 12, 20, 0.06) !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 1 !important;
+        // Bootstrap's .btn-close uses an SVG mask with currentColor.
+        // The dark maroon bg already gives contrast, but we keep the
+        // filter to ensure the X is dark enough on the tinted bg.
+        filter: invert(1) grayscale(1) brightness(0.3) !important;
+        transition: background-color 0.2s ease, transform 0.2s ease !important;
+
+        &:hover {
+            background-color: rgba(122, 12, 20, 0.14) !important;
+            transform: rotate(90deg) !important;
+        }
+
+        &:active {
+            transform: scale(0.92) !important;
+        }
+
+        &:focus {
+            box-shadow: 0 0 0 3px rgba(122, 12, 20, 0.18) !important;
+            outline: none !important;
+        }
+    }
+
+    // 6) MENU ITEMS — larger touch targets + maroon left accent
+    .offcanvas.o_navbar_mobile .navbar-nav .nav-link,
+    .offcanvas .navbar-nav .nav-link {
+        padding: 14px 18px !important;
+        border-radius: 10px !important;
+        font-size: 16px !important;
+        line-height: 1.4 !important;
+        position: relative !important;
+        transition: background-color 0.15s ease,
+                    color 0.15s ease,
+                    padding-left 0.2s ease,
+                    box-shadow 0.2s ease !important;
+
+        // ACTIVE page — maroon left-border accent via box-shadow inset
+        &.active {
+            background-color: rgba(122, 12, 20, 0.06) !important;
+            color: #7a0c14 !important;
+            font-weight: 600 !important;
+            padding-left: 22px !important;
+            box-shadow: inset 3px 0 0 #7a0c14 !important;
+        }
+
+        // HOVER (and focus-visible for keyboard) on non-active items
+        &:not(.active):hover,
+        &:not(.active):focus-visible {
+            padding-left: 22px !important;
+            box-shadow: inset 3px 0 0 rgba(122, 12, 20, 0.4) !important;
+            background-color: rgba(122, 12, 20, 0.04) !important;
+            color: #7a0c14 !important;
+        }
+    }
+
+    // 7) HEADER container itself — slight polish, keep dark maroon bg
+    //    but ensure no awkward padding around the hamburger button.
+    header .o_header_mobile .navbar {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+}
+
+// ============================================================
 // MOBILE SHOP PRODUCT GRID — Force 2 columns on small screens
 // Issue: default Odoo shop uses <table> layout that collapses
 // to 1 column on mobile. Convert to 2-col grid via CSS.
