@@ -68,12 +68,12 @@
                             <div class="col-lg-5 pt24 pb24">
                                 <h5 class="mb-3">Alamat Kami</h5>
                                 <p>
-                                    <i class="fa fa-map-marker fa-fw me-2 text-primary"/>
+                                    <i class="fa fa-map-marker fa-fw me-2 text-white"/>
                                     Dusun Ngrekesan, Desa Ngadri, Kec. Binangun,<br/>
                                     Kab. Blitar, Jawa Timur 66193, Indonesia
                                 </p>
                                 <p>
-                                    <i class="fa fa-location-arrow fa-fw me-2 text-primary"/>
+                                    <i class="fa fa-location-arrow fa-fw me-2 text-white"/>
                                     <strong>Koordinat GPS:</strong>
                                     <a href="https://www.openstreetmap.org/?mlat=-8.2340141&amp;mlon=112.3361544#map=15/-8.2340141/112.3361544"
                                        target="_blank" rel="noopener">
