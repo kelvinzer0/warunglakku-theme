@@ -54,7 +54,7 @@
                             <!-- ====================================================== -->
                             <div class="col-lg-2 pt24 pb24">
                                 <h5 class="mb-3">Link yang Berguna</h5>
-                                <ul class="list-unstyled">
+                                <ul class="list-unstyled wl-footer-links">
                                     <li><a href="/">Beranda</a></li>
                                     <li><a href="/shop">Toko</a></li>
                                     <li><a href="/contactus">Kontak kami</a></li>

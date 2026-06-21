@@ -1030,6 +1030,96 @@ h1, h2, h3, h4, h5, h6 {
 // ============================================================
 
 // ============================================================
+// FOOTER LINKS — Gradient Ball Bullets (v17.0.3.10.31)
+//
+// Style the "Link yang Berguna" list in the footer with
+// gradient ball bullets (small circle dengan radial gradient
+// kuning→orange →maroon, plus subtle glow supaya keliatan
+// seperti bola 3D di atas background maroon gelap footer).
+//
+// Tiap <li> punya ::before pseudo-element sebagai bullet ball:
+//   - 8px diameter, border-radius 50%
+//   - radial-gradient: highlight kuning di kiri-atas (highlight),
+//     mid orange, dark maroon di kanan-bawah (shadow)
+//   - box-shadow: outer dark glow + inner highlight
+//   - transition: scale + brightness on hover
+//
+// Hover state: ball scales 1.25x + rotate sedikit, link text
+// bergeser kanan 4px dan warna naik ke yellow terang.
+// ============================================================
+#footer .wl-footer-links {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+
+    li {
+        position: relative;
+        padding-left: 18px;  // ruang untuk bullet ball
+        margin-bottom: 10px;
+        line-height: 1.5;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        // The gradient ball bullet
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            // Radial gradient: highlight kuning (kiri-atas) → orange → maroon (kanan-bawah)
+            // Mirror the position of a light source top-left → bola 3D effect
+            background:
+                radial-gradient(
+                    circle at 30% 30%,
+                    #ffe066 0%,
+                    #f5c400 35%,
+                    #d97706 70%,
+                    #7a0c14 100%
+                );
+            // Outer dark glow (depth) + inner top highlight (specular)
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.25),       // ring pemisah dari background
+                0 1px 2px rgba(0, 0, 0, 0.4),         // drop shadow
+                inset 0 -1px 1px rgba(122, 12, 20, 0.6),  // bottom inner shadow
+                inset 0 1px 1px rgba(255, 255, 255, 0.35); // top inner highlight
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        box-shadow 0.25s ease;
+        }
+
+        a {
+            color: rgba(255, 255, 255, 0.92);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;
+            display: inline-block;
+        }
+
+        // Hover: ball scales + rotates, link geser kanan + kuning terang
+        &:hover {
+            &::before {
+                transform: translateY(-50%) scale(1.35) rotate(15deg);
+                box-shadow:
+                    0 0 0 1px rgba(0, 0, 0, 0.25),
+                    0 2px 6px rgba(245, 196, 0, 0.55),  // glow kuning
+                    inset 0 -1px 1px rgba(122, 12, 20, 0.6),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+            }
+            a {
+                color: #ffd84d;
+                transform: translateX(4px);
+                text-shadow: 0 1px 4px rgba(245, 196, 0, 0.35);
+            }
+        }
+    }
+}
+
+// ============================================================
 // FOOTER MAP (v17.0.3.4.0)
 // Style the OpenStreetMap iframe embedded in the footer's
 // "Alamat Kami" column.
