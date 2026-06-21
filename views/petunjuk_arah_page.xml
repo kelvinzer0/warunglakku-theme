@@ -255,6 +255,36 @@
                                     '@keyframes wl-arrow-bounce {' +
                                         '0%, 100% { transform: translateY(0) rotate(var(--wl-arrow-rot, 0deg)); }' +
                                         '50% { transform: translateY(-12px) rotate(var(--wl-arrow-rot, 0deg)); }' +
+                                    '}' +
+                                    // v3.10.28: Force hero text to white.
+                                    // Odoo theme SCSS has rules like `h1 { color: #7a0c14 !important; }`
+                                    // that override our inline `color: #fff`. The SCSS compiler
+                                    // strips !important from static CSS, so we inject here (JS-injected
+                                    // styles bypass the SCSS compiler entirely) to force white text on
+                                    // the maroon hero background. Without this, the title is invisible
+                                    // (red on red).
+                                    '.wl-directions-hero h1,' +
+                                    '.wl-directions-hero h2,' +
+                                    '.wl-directions-hero h3,' +
+                                    '.wl-directions-hero h4,' +
+                                    '.wl-directions-hero p,' +
+                                    '.wl-directions-hero li,' +
+                                    '.wl-directions-hero a,' +
+                                    '.wl-directions-hero span,' +
+                                    '#wl-directions-status {' +
+                                        'color: #ffffff !important;' +
+                                    '}' +
+                                    // Specific exceptions: keep accent / icon colors as designed
+                                    '.wl-directions-hero .breadcrumb-item a,' +
+                                    '.wl-directions-hero h1 i.fa,' +
+                                    '.wl-directions-hero .breadcrumb-item.active::before {' +
+                                        'color: #f5c400 !important;' +
+                                    '}' +
+                                    '.wl-directions-hero .breadcrumb-item.active {' +
+                                        'color: rgba(255,255,255,0.9) !important;' +
+                                    '}' +
+                                    '.wl-directions-hero p {' +
+                                        'color: rgba(255,255,255,0.85) !important;' +
                                     '}';
                                 document.head.appendChild(style);
                                 console.log('WL: directions page CSS injected');
