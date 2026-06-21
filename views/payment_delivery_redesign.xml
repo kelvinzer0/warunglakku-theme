@@ -193,6 +193,28 @@
                                 </div>
                             </div>
 
+                            <!-- v3.10.16: Route info panel — shows OSRM driving
+                                 route distance, duration, and estimated shipping
+                                 price from Warung Lakku cabang to buyer's address.
+                                 Populated by JS after OSRM Route API responds. -->
+                            <div id="wl_route_info" class="wl-route-info wl-route-info--loading">
+                                <div class="wl-route-info__icon">
+                                    <i class="fa fa-road"/>
+                                </div>
+                                <div class="wl-route-info__body">
+                                    <div class="wl-route-info__title">
+                                        Rute Warung Lakku → Alamat Anda
+                                    </div>
+                                    <div class="wl-route-info__stats">
+                                        <span id="wl_route_stats">—</span>
+                                    </div>
+                                </div>
+                                <div class="wl-route-info__price" id="wl_route_price">
+                                    —
+                                    <small>Estimasi Ongkir</small>
+                                </div>
+                            </div>
+
                             <div class="wl-map-modal__address-wrap mt-3">
                                 <i class="fa fa-map-marker wl-map-modal__addr-icon"/>
                                 <div class="wl-map-modal__address"
@@ -1084,6 +1106,17 @@
                                 'top-right'
                             );
 
+                            // ---- v3.10.16: Fetch OSRM best route from cabang
+                            //      to buyer's address and draw it on the map. ----
+                            // Uses the SAME OSRM server as delivery_osrm_distance
+                            // module (https://router.project-osrm.org by default,
+                            // configurable on the carrier record).
+                            // Pricing logic mirrors the carrier:
+                            //   - Price per km: Rp 1000
+                            //   - Min price: Rp 2000
+                            //   - Round up to next integer km
+                            fetchOsrmRoute(mapInstance, WL_CABANG, lat, lng);
+
                         } catch (e) {
                             console.warn('MapLibre init failed:', e);
                             container.innerHTML =
@@ -1092,6 +1125,223 @@
                                 'Peta tidak dapat dimuat. Silakan klik ' +
                                 '&lt;strong&gt;Tidak, Atur Ulang&lt;/strong&gt; ' +
                                 'untuk memastikan lokasi Anda.&lt;/div&gt;';
+                        }
+                    }
+
+                    // ---- v3.10.16: OSRM Route fetcher + drawer ----
+                    // Calls https://router.project-osrm.org/route/v1/driving/
+                    //   {cabangLng},{cabangLat};{userLng},{userLat}
+                    //   ?overview=full&amp;geometries=geojson&amp;steps=false
+                    // Returns route geometry (GeoJSON LineString) + distance
+                    // (metres) + duration (seconds).
+                    //
+                    // Draws the route on the MapLibre map as a maroon line
+                    // with yellow casing, and populates the route info panel
+                    // below the map with distance, duration, and estimated
+                    // shipping price.
+                    //
+                    // Pricing config (mirrors delivery_osrm_distance carrier):
+                    //   - price_per_km: 1000 IDR
+                    //   - minimum_price: 2000 IDR
+                    //   - round_up_km: true (1.2km → 2km → 2000 IDR, 2.01km → 3km → 3000 IDR)
+                    function fetchOsrmRoute(map, cabang, userLat, userLng) {
+                        var OSRM_SERVER = 'https://router.project-osrm.org';
+                        var url = OSRM_SERVER + '/route/v1/driving/' +
+                            cabang.lng.toFixed(6) + ',' + cabang.lat.toFixed(6) + ';' +
+                            userLng.toFixed(6) + ',' + userLat.toFixed(6) +
+                            '?overview=full&amp;geometries=geojson&amp;steps=false';
+
+                        console.log('WL: fetching OSRM route:', url);
+
+                        // Pricing config (sync with delivery_osrm_distance carrier record)
+                        var PRICE_PER_KM = 1000;
+                        var MIN_PRICE = 2000;
+                        var ROUND_UP_KM = true;
+
+                        var infoEl = document.getElementById('wl_route_info');
+                        var statsEl = document.getElementById('wl_route_stats');
+                        var priceEl = document.getElementById('wl_route_price');
+
+                        // Initial loading state
+                        if (infoEl) {
+                            infoEl.classList.remove('wl-route-info--error');
+                            infoEl.classList.add('wl-route-info--loading');
+                        }
+                        if (statsEl) statsEl.textContent = 'menghitung rute...';
+                        if (priceEl) priceEl.innerHTML = '...&lt;small&gt;Estimasi Ongkir&lt;/small&gt;';
+
+                        fetch(url, { method: 'GET' })
+                            .then(function (r) {
+                                if (!r.ok) throw new Error('HTTP ' + r.status);
+                                return r.json();
+                            })
+                            .then(function (data) {
+                                if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
+                                    throw new Error('OSRM code: ' + data.code +
+                                        (data.message ? ' (' + data.message + ')' : ''));
+                                }
+                                var route = data.routes[0];
+                                var distanceM = route.distance || 0;
+                                var durationS = route.duration || 0;
+                                var distanceKm = distanceM / 1000.0;
+                                var durationMin = Math.round(durationS / 60);
+
+                                // Pricing: round up to next integer km, multiply, clamp to min
+                                var billedKm = ROUND_UP_KM
+                                    ? Math.ceil(distanceKm)
+                                    : distanceKm;
+                                var price = billedKm * PRICE_PER_KM;
+                                if (MIN_PRICE &gt; 0) price = Math.max(price, MIN_PRICE);
+
+                                console.log('WL: OSRM route ok — distance=' +
+                                    distanceKm.toFixed(2) + 'km, duration=' +
+                                    durationMin + 'min, price=' + price + ' IDR');
+
+                                // Draw route geometry on map
+                                drawRouteOnMap(map, route.geometry, cabang,
+                                    { lat: userLat, lng: userLng });
+
+                                // Update info panel
+                                if (infoEl) {
+                                    infoEl.classList.remove('wl-route-info--loading');
+                                    infoEl.classList.remove('wl-route-info--error');
+                                }
+                                if (statsEl) {
+                                    var distStr = distanceKm &lt; 1
+                                        ? Math.round(distanceM) + ' m'
+                                        : distanceKm.toFixed(2) + ' km';
+                                    var durStr;
+                                    if (durationMin &lt; 60) {
+                                        durStr = durationMin + ' menit';
+                                    } else {
+                                        var h = Math.floor(durationMin / 60);
+                                        var m = durationMin % 60;
+                                        durStr = h + ' jam ' + m + ' menit';
+                                    }
+                                    statsEl.innerHTML =
+                                        '&lt;strong&gt;' + escapeHtml(distStr) + '&lt;/strong&gt;' +
+                                        '&lt;span class="wl-route-info__sep"&gt;•&lt;/span&gt;' +
+                                        '&lt;strong&gt;' + escapeHtml(durStr) + '&lt;/strong&gt;' +
+                                        '&lt;span class="wl-route-info__sep"&gt;•&lt;/span&gt;' +
+                                        'Billed ' + billedKm + ' km';
+                                }
+                                if (priceEl) {
+                                    var priceStr = 'Rp ' + price.toLocaleString('id-ID');
+                                    priceEl.innerHTML = escapeHtml(priceStr) +
+                                        '&lt;small&gt;Estimasi Ongkir&lt;/small&gt;';
+                                }
+                            })
+                            .catch(function (err) {
+                                console.warn('WL: OSRM route failed:', err.message);
+                                if (infoEl) {
+                                    infoEl.classList.remove('wl-route-info--loading');
+                                    infoEl.classList.add('wl-route-info--error');
+                                }
+                                if (statsEl) {
+                                    statsEl.innerHTML = 'Rute tidak dapat dihitung' +
+                                        '&lt;br/&gt;&lt;small style="color:#999;font-size:10px"&gt;' +
+                                        escapeHtml(err.message) + '&lt;/small&gt;';
+                                }
+                                if (priceEl) {
+                                    priceEl.innerHTML = '—&lt;small&gt;Estimasi Ongkir&lt;/small&gt;';
+                                }
+                            });
+                    }
+
+                    // Draw the OSRM route LineString on the map.
+                    // Renders 2 layers:
+                    //   - wl-route-casing: thick yellow line under the maroon line
+                    //     (gives a "road" feel similar to Google Maps directions)
+                    //   - wl-route-line: maroon 4px line on top
+                    // Also auto-fits bounds to show the entire route.
+                    function drawRouteOnMap(map, geometry, cabang, user) {
+                        if (!map || !geometry) return;
+                        try {
+                            // Remove existing route layers/sources if any (for re-renders)
+                            ['wl-route-line', 'wl-route-casing'].forEach(function (id) {
+                                if (map.getLayer(id)) map.removeLayer(id);
+                            });
+                            if (map.getSource('wl-route')) map.removeSource('wl-route');
+
+                            map.addSource('wl-route', {
+                                type: 'geojson',
+                                data: {
+                                    type: 'Feature',
+                                    geometry: geometry,
+                                    properties: {}
+                                }
+                            });
+
+                            // Casing (yellow, thick, drawn first so maroon line sits on top)
+                            map.addLayer({
+                                id: 'wl-route-casing',
+                                type: 'line',
+                                source: 'wl-route',
+                                layout: {
+                                    'line-cap': 'round',
+                                    'line-join': 'round'
+                                },
+                                paint: {
+                                    'line-color': '#f5c400',
+                                    'line-width': {
+                                        stops: [
+                                            [8, 3],
+                                            [12, 5],
+                                            [16, 9],
+                                            [20, 14]
+                                        ]
+                                    },
+                                    'line-opacity': 0.9
+                                }
+                            });
+
+                            // Main line (maroon, slightly thinner than casing)
+                            map.addLayer({
+                                id: 'wl-route-line',
+                                type: 'line',
+                                source: 'wl-route',
+                                layout: {
+                                    'line-cap': 'round',
+                                    'line-join': 'round'
+                                },
+                                paint: {
+                                    'line-color': '#7a0c14',
+                                    'line-width': {
+                                        stops: [
+                                            [8, 1.5],
+                                            [12, 3],
+                                            [16, 5],
+                                            [20, 8]
+                                        ]
+                                    },
+                                    'line-opacity': 1.0
+                                }
+                            });
+
+                            console.log('WL: OSRM route drawn on map');
+
+                            // Auto-fit bounds to show entire route (overrides the
+                            // earlier 5km auto-fit because the route may extend
+                            // far beyond cabang↔user straight line)
+                            try {
+                                var coords = geometry.coordinates || [];
+                                if (coords.length &gt; 1) {
+                                    var bounds = new maplibregl.LngLatBounds();
+                                    coords.forEach(function (c) { bounds.extend(c); });
+                                    // Always include cabang + user markers too
+                                    bounds.extend([cabang.lng, cabang.lat]);
+                                    bounds.extend([user.lng, user.lat]);
+                                    map.fitBounds(bounds, {
+                                        padding: { top: 60, bottom: 80, left: 40, right: 40 },
+                                        maxZoom: 15
+                                    });
+                                    console.log('WL: route auto-fit bounds applied');
+                                }
+                            } catch (e) {
+                                console.warn('WL: route fitBounds failed:', e.message);
+                            }
+                        } catch (e) {
+                            console.warn('WL: drawRouteOnMap failed:', e.message);
                         }
                     }
 
