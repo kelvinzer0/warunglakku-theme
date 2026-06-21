@@ -893,8 +893,19 @@
                                 style: 'https://tiles.openfreemap.org/styles/liberty',
                                 center: [lng, lat],
                                 zoom: 16,
-                                attributionControl: true
+                                attributionControl: true,
+                                // v3.10.16: Lock map orientation on mobile.
+                                // Disable all rotation/pitch gestures so the
+                                // map (and HTML markers) never tilt or spin
+                                // when user does two-finger pinch on touch
+                                // devices. This keeps both the cabang pin
+                                // and the user delivery pin perfectly upright.
+                                dragRotate: false,
+                                touchPitch: false,
+                                touchZoomRotate: true  // pinch-zoom OK, but rotation disabled above
                             });
+                            // Extra safety: also disable keyboard rotation
+                            try { mapInstance.keyboard.disableRotation(); } catch(e) {}
 
                             // Expose for debugging (v3.10.13)
                             window._wl_map = mapInstance;
@@ -932,7 +943,13 @@
 
                             new maplibregl.Marker({
                                 element: markerEl,
-                                anchor: 'bottom'
+                                anchor: 'bottom',
+                                // v3.10.16: Force marker to always stay upright
+                                // (viewport-aligned) regardless of any map
+                                // bearing/pitch. Belt-and-suspenders with the
+                                // dragRotate:false map option above.
+                                rotationAlignment: 'viewport',
+                                pitchAlignment: 'viewport'
                             })
                                 .setLngLat([lng, lat])
                                 .addTo(mapInstance);
@@ -1031,7 +1048,10 @@
 
                             var cabangMarker = new maplibregl.Marker({
                                 element: cabangEl,
-                                anchor: 'bottom'
+                                anchor: 'bottom',
+                                // v3.10.16: same as user marker — always upright
+                                rotationAlignment: 'viewport',
+                                pitchAlignment: 'viewport'
                             })
                                 .setLngLat([WL_CABANG.lng, WL_CABANG.lat])
                                 .addTo(mapInstance);
