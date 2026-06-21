@@ -14,8 +14,10 @@
              in depth — survives even if JS injection runs late).
           3. Wrap each value in <span style="color:#333"> for triple
              redundancy.
-          4. Add a category legend overlay on the map so users can see
-             what each POI color means without needing to click.
+
+        v17.0.3.10.26: Removed category legend overlay (per user request —
+        "gak perlu kategori POI list keterangan itu soalnya memakan space").
+        Kept the popup color fix from v3.10.25.
 
         v17.0.3.10.24: Replace the basic OpenStreetMap iframe in the footer
         with a MapLibre GL map matching the delivery confirmation modal's
@@ -74,10 +76,7 @@
                         <i class="fa fa-spinner fa-pulse me-2"/>
                         Memuat peta Warung Lakku...
                     </div>
-                    <!-- v3.10.25: POI category legend overlay is added via JS
-                         in map.on('load') because container.innerHTML=''
-                         during init wipes any static children. See
-                         addFooterLegend() in the IIFE below. -->
+                    <!-- MapLibre container. Legend overlay removed in v3.10.26. -->
                 </div>
             </div>
         </xpath>
@@ -142,53 +141,9 @@
                             '.maplibregl-popup-content span:not([style*="color"]),' +
                             '.maplibregl-popup-content p:not([style*="color"]) {' +
                                 'color: #333 !important;' +
-                            '}' +
-                            // Legend overlay styling (added in v3.10.25)
-                            '.wl-footer-map-legend {' +
-                                'position: absolute;' +
-                                'bottom: 8px;' +
-                                'left: 8px;' +
-                                'z-index: 5;' +
-                                'background: rgba(255,255,255,0.96);' +
-                                'border: 1px solid #7a0c14;' +
-                                'border-radius: 6px;' +
-                                'padding: 6px 8px;' +
-                                'font-family: Poppins, sans-serif;' +
-                                'font-size: 10px;' +
-                                'line-height: 1.5;' +
-                                'color: #333;' +
-                                'box-shadow: 0 2px 6px rgba(0,0,0,0.15);' +
-                                'max-width: 140px;' +
-                                'pointer-events: none;' +
-                            '}' +
-                            '.wl-footer-map-legend__title {' +
-                                'font-weight: 700;' +
-                                'color: #7a0c14;' +
-                                'font-size: 10px;' +
-                                'text-transform: uppercase;' +
-                                'letter-spacing: 0.4px;' +
-                                'margin-bottom: 3px;' +
-                                'display: block;' +
-                            '}' +
-                            '.wl-footer-map-legend__row {' +
-                                'display: flex;' +
-                                'align-items: center;' +
-                                'gap: 5px;' +
-                                'margin: 1px 0;' +
-                            '}' +
-                            '.wl-footer-map-legend__dot {' +
-                                'width: 8px;' +
-                                'height: 8px;' +
-                                'border-radius: 50%;' +
-                                'flex-shrink: 0;' +
-                                'border: 1px solid rgba(0,0,0,0.2);' +
-                            '}' +
-                            // On very small screens, hide the legend (avoid covering map)
-                            '@media (max-width: 359px) {' +
-                                '.wl-footer-map-legend { display: none; }' +
                             '}';
                         document.head.appendChild(style);
-                        console.log('WL: footer popup color + legend overrides injected');
+                        console.log('WL: footer popup color overrides injected');
                     })();
 
                     // Warung Lakku cabang location (matches modal + wl_osm_enrichment)
@@ -292,10 +247,6 @@
                                 applyCustomMapStyle(map);
                                 addFooterCustomLayers(map);
                                 loadFooterEnrichment(map);
-                                // v3.10.25: add category legend overlay (must be
-                                // done after container.innerHTML='' which wipes
-                                // any static children added in the template)
-                                addFooterLegend(container);
                             });
                             map.on('styledata', function () {
                                 applyCustomMapStyle(map);
@@ -474,35 +425,6 @@
                         } catch (e) {
                             console.warn('WL: footer cabang radius failed:', e.message);
                         }
-                    }
-
-                    // v3.10.25: build POI category legend overlay and append
-                    // it to the map container. Must be called AFTER
-                    // container.innerHTML = '' in initFooterMap, otherwise
-                    // the legend gets wiped along with the loading placeholder.
-                    function addFooterLegend(container) {
-                        if (container.querySelector('.wl-footer-map-legend')) return;
-                        var legend = document.createElement('div');
-                        legend.className = 'wl-footer-map-legend';
-                        var rows = [
-                            ['#1976d2', 'Minimarket'],
-                            ['#2e7d32', 'Masjid/Tempat Ibadah'],
-                            ['#f57c00', 'Sekolah'],
-                            ['#c62828', 'SPBU'],
-                            ['#6a1b9a', 'Pasar'],
-                            ['#00838f', 'Kesehatan'],
-                            ['#546e7a', 'Lainnya']
-                        ];
-                        var html = '&lt;span class="wl-footer-map-legend__title"&gt;Kategori POI&lt;/span&gt;';
-                        for (var i = 0; i &lt; rows.length; i++) {
-                            html += '&lt;div class="wl-footer-map-legend__row"&gt;' +
-                                '&lt;span class="wl-footer-map-legend__dot" style="background:' + rows[i][0] + '"/&gt;' +
-                                '&lt;span&gt;' + rows[i][1] + '&lt;/span&gt;' +
-                                '&lt;/div&gt;';
-                        }
-                        legend.innerHTML = html;
-                        container.appendChild(legend);
-                        console.log('WL: footer map legend added');
                     }
 
                     function loadFooterEnrichment(map) {
