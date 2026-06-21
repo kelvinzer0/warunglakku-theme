@@ -72,18 +72,12 @@
                                     Dusun Ngrekesan, Desa Ngadri, Kec. Binangun,<br/>
                                     Kab. Blitar, Jawa Timur 66193, Indonesia
                                 </p>
-                                <p>
-                                    <i class="fa fa-location-arrow fa-fw me-2 text-white"/>
-                                    <strong>Koordinat GPS:</strong>
-                                    <a href="https://www.openstreetmap.org/?mlat=-8.2340141&amp;mlon=112.3361544#map=15/-8.2340141/112.3361544"
-                                       target="_blank" rel="noopener">
-                                        -8.2340141, 112.3361544
-                                    </a>
-                                </p>
-                                <!-- Embedded OpenStreetMap iframe (interactive, no API key).
-                                     Using bbox around the store coords so the marker is centered.
-                                     bbox format: min_lon,min_lat,max_lon,max_lat (slight expansion
-                                     around the store so the map shows surrounding streets). -->
+                                <!-- v3.10.27: Removed Koordinat GPS paragraph and the 3 buttons
+                                     (Buka di Ponsel / Google Maps / Peta Lengkap).
+                                     The MapLibre footer map (from views/footer_map_maplibre.xml)
+                                     now contains a "Petunjuk Arah" CTA button that opens
+                                     /petunjuk-arah with realtime user-position directions and
+                                     an animated arrow pointing toward Warung Lakku. -->
                                 <div class="wl-footer-map-embed rounded shadow-sm overflow-hidden">
                                     <iframe
                                         title="Peta lokasi Warung Lakku"
@@ -91,22 +85,6 @@
                                         style="width: 100%; height: 220px; border: 0; display: block;"
                                         loading="lazy"
                                         referrerpolicy="no-referrer-when-downgrade"/>
-                                </div>
-                                <div class="mt-2 d-flex flex-wrap gap-2">
-                                    <a href="geo:-8.2340141,112.3361544?q=-8.2340141,112.3361544"
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="fa fa-mobile me-1"/>Buka di Ponsel
-                                    </a>
-                                    <a href="https://www.google.com/maps/search/?api=1&amp;query=-8.2340141,112.3361544"
-                                       target="_blank" rel="noopener"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        <i class="fa fa-map me-1"/>Google Maps
-                                    </a>
-                                    <a href="https://www.openstreetmap.org/?mlat=-8.2340141&amp;mlon=112.3361544#map=15/-8.2340141/112.3361544"
-                                       target="_blank" rel="noopener"
-                                       class="btn btn-sm btn-outline-info">
-                                        <i class="fa fa-globe me-1"/>Peta Lengkap
-                                    </a>
                                 </div>
                             </div>
 

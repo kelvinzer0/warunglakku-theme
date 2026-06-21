@@ -126,6 +126,10 @@
                     // Fix: JS-inject !important rule forcing popup-content and its
                     // children to dark grey. Same bypass technique as v3.10.22
                     // (SCSS compiler can't strip !important from JS-injected CSS).
+                    //
+                    // v3.10.27: also injects CSS for the "Petunjuk Arah" CTA
+                    // button that appears inside the footer map (links to
+                    // /petunjuk-arah realtime directions page).
                     (function injectPopupColorOverride() {
                         if (document.getElementById('wl-popup-color-override')) return;
                         var style = document.createElement('st' + 'yle');
@@ -141,9 +145,40 @@
                             '.maplibregl-popup-content span:not([style*="color"]),' +
                             '.maplibregl-popup-content p:not([style*="color"]) {' +
                                 'color: #333 !important;' +
+                            '}' +
+                            // v3.10.27: CTA button inside footer map (links to /petunjuk-arah)
+                            '.wl-footer-directions-cta {' +
+                                'position: absolute;' +
+                                'bottom: 10px;' +
+                                'right: 10px;' +
+                                'z-index: 5;' +
+                                'background: linear-gradient(135deg, #5a080e 0%, #7a0c14 100%);' +
+                                'color: #fff;' +
+                                'border: 2px solid #f5c400;' +
+                                'border-radius: 8px;' +
+                                'padding: 7px 14px;' +
+                                'font-family: Poppins, sans-serif;' +
+                                'font-size: 12px;' +
+                                'font-weight: 600;' +
+                                'text-decoration: none;' +
+                                'box-shadow: 0 3px 10px rgba(0,0,0,0.25);' +
+                                'cursor: pointer;' +
+                                'display: inline-flex;' +
+                                'align-items: center;' +
+                                'gap: 6px;' +
+                                'transition: transform 0.15s, box-shadow 0.15s, color 0.15s;' +
+                            '}' +
+                            '.wl-footer-directions-cta:hover {' +
+                                'transform: translateY(-1px);' +
+                                'box-shadow: 0 5px 14px rgba(0,0,0,0.35);' +
+                                'color: #f5c400;' +
+                            '}' +
+                            '.wl-footer-directions-cta i { font-size: 13px; }' +
+                            '@media (max-width: 359px) {' +
+                                '.wl-footer-directions-cta { padding: 5px 10px; font-size: 11px; }' +
                             '}';
                         document.head.appendChild(style);
-                        console.log('WL: footer popup color overrides injected');
+                        console.log('WL: footer popup color overrides + CTA CSS injected');
                     })();
 
                     // Warung Lakku cabang location (matches modal + wl_osm_enrichment)
@@ -247,6 +282,11 @@
                                 applyCustomMapStyle(map);
                                 addFooterCustomLayers(map);
                                 loadFooterEnrichment(map);
+                                // v3.10.27: add "Petunjuk Arah" CTA button inside
+                                // the footer map. Done AFTER container.innerHTML=''
+                                // (which ran earlier in initFooterMap to wipe the
+                                // loading placeholder) so the CTA survives.
+                                addFooterDirectionsCTA(container);
                             });
                             map.on('styledata', function () {
                                 applyCustomMapStyle(map);
@@ -425,6 +465,21 @@
                         } catch (e) {
                             console.warn('WL: footer cabang radius failed:', e.message);
                         }
+                    }
+
+                    // v3.10.27: add "Petunjuk Arah" CTA button inside the
+                    // footer map. Links to /petunjuk-arah which opens a
+                    // realtime directions page with animated arrow pointing
+                    // toward Warung Lakku (using user's geolocation).
+                    function addFooterDirectionsCTA(container) {
+                        if (!container) return;
+                        if (container.querySelector('.wl-footer-directions-cta')) return;
+                        var btn = document.createElement('a');
+                        btn.className = 'wl-footer-directions-cta';
+                        btn.href = '/petunjuk-arah';
+                        btn.innerHTML = '&lt;i class="fa fa-location-arrow"&gt;&lt;/i&gt; Petunjuk Arah';
+                        container.appendChild(btn);
+                        console.log('WL: footer "Petunjuk Arah" CTA added');
                     }
 
                     function loadFooterEnrichment(map) {

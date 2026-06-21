@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        v17.0.3.10.27: Petunjuk Arah page — realtime directions to Warung Lakku.
+
+        User request:
+          "sebagai ganti buat tombol CTA Petunjuk Arah dalam maps yang
+           membuka halaman petunjuk arah dengan current realtime long lat
+           user dengan animasi ketik anak panah saat user jalan menuju
+           warung lakku"
+
+        What this page does:
+          1. Asks user for geolocation permission on load
+          2. Watches user position in realtime via navigator.geolocation.
+             watchPosition() — updates every few seconds as the user moves
+          3. Renders a full-width MapLibre map showing:
+             a. Warung Lakku destination (maroon pin, same as footer map)
+             b. User position (animated blue dot that pulses)
+             c. A dashed line from user to destination (straight-line)
+             d. Big arrow below the map pointing toward destination
+          4. Top info panel shows:
+             - Distance to Warung Lakku (km + m, updates live)
+             - Compass bearing (e.g. "Timur Laut" / "Tenggara")
+             - Estimated walking time (~5 km/h average)
+             - GPS accuracy
+          5. Big arrow below the map rotates to point toward Warung Lakku
+             and bounces up/down to communicate "go this way". As the user
+             walks, the arrow re-orients.
+
+        No backend routing service is used — straight-line ("as the crow
+        flies") direction only. Works without API keys.
+    -->
+
+    <record id="petunjuk_arah_page" model="ir.ui.view">
+        <field name="name">WL: Petunjuk Arah</field>
+        <field name="key">theme_warunglakku.petunjuk_arah_page</field>
+        <field name="type">qweb</field>
+        <field name="arch" type="xml">
+            <t t-name="theme_warunglakku.petunjuk_arah_page">
+                <t t-call="website.layout">
+                    <div id="wrap" class="oe_structure oe_empty">
+                        <section class="wl-directions-hero s_text_block pt-4 pb-3"
+                                 style="background: linear-gradient(135deg, #5a080e 0%, #7a0c14 100%); color: #fff;">
+                            <div class="container">
+                                <div class="row align-items-center">
+                                    <div class="col-lg-8">
+                                        <nav aria-label="breadcrumb" style="margin-bottom: 8px;">
+                                            <ol class="breadcrumb mb-0" style="background: transparent; padding: 0;">
+                                                <li class="breadcrumb-item">
+                                                    <a href="/" style="color: #f5c400;">Beranda</a>
+                                                </li>
+                                                <li class="breadcrumb-item active" aria-current="page"
+                                                    style="color: rgba(255,255,255,0.9);">
+                                                    Petunjuk Arah
+                                                </li>
+                                            </ol>
+                                        </nav>
+                                        <h1 class="mb-1" style="color: #fff; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.8rem;">
+                                            <i class="fa fa-location-arrow me-2" style="color: #f5c400;"/>
+                                            Petunjuk Arah ke Warung Lakku
+                                        </h1>
+                                        <p class="mb-0" style="color: rgba(255,255,255,0.85); font-size: 0.95rem;">
+                                            Izinkan akses lokasi untuk melihat arah real-time menuju cabang Binangun.
+                                        </p>
+                                    </div>
+                                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                        <div id="wl-directions-status"
+                                             style="display: inline-block; padding: 8px 14px; border-radius: 20px; background: rgba(255,255,255,0.15); border: 1px solid rgba(245,196,0,0.4); font-size: 0.85rem; color: #fff;">
+                                            <i class="fa fa-spinner fa-pulse me-2"/>
+                                            Memuat...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="wl-directions-content py-0">
+                            <div class="container-fluid px-0">
+                                <!-- Live info panel (above map) -->
+                                <div id="wl-directions-info"
+                                     style="display: none; background: linear-gradient(90deg, #fff7e0 0%, #fffbf2 100%); border-bottom: 2px solid #f5c400; padding: 12px 16px;">
+                                    <div class="container">
+                                        <div class="row align-items-center text-center text-md-start">
+                                            <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                                <div style="font-size: 10px; color: #7a0c14; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+                                                    <i class="fa fa-road me-1"/>Jarak
+                                                </div>
+                                                <div id="wl-directions-distance"
+                                                     style="font-size: 1.4rem; color: #5a080e; font-weight: 700; font-family: 'Poppins', sans-serif;">
+                                                    —
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                                <div style="font-size: 10px; color: #7a0c14; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+                                                    <i class="fa fa-compass me-1"/>Arah
+                                                </div>
+                                                <div id="wl-directions-bearing"
+                                                     style="font-size: 1.4rem; color: #5a080e; font-weight: 700; font-family: 'Poppins', sans-serif;">
+                                                    —
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                                <div style="font-size: 10px; color: #7a0c14; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+                                                    <i class="fa fa-walking me-1"/>Estimasi Jalan
+                                                </div>
+                                                <div id="wl-directions-eta"
+                                                     style="font-size: 1.4rem; color: #5a080e; font-weight: 700; font-family: 'Poppins', sans-serif;">
+                                                    —
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                                <div style="font-size: 10px; color: #7a0c14; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+                                                    <i class="fa fa-crosshairs me-1"/>Akurasi GPS
+                                                </div>
+                                                <div id="wl-directions-accuracy"
+                                                     style="font-size: 1.4rem; color: #5a080e; font-weight: 700; font-family: 'Poppins', sans-serif;">
+                                                    —
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Map container (full viewport width, 70vh height) -->
+                                <div id="wl_directions_map"
+                                     style="width: 100%; height: 70vh; min-height: 400px; background: #f5f5f0; position: relative;">
+                                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #7a0c14; font-family: 'Poppins', sans-serif; font-size: 14px; flex-direction: column; gap: 12px;">
+                                        <i class="fa fa-spinner fa-pulse" style="font-size: 32px;"/>
+                                        <span>Memuat peta petunjuk arah...</span>
+                                    </div>
+                                </div>
+
+                                <!-- Animated direction arrow (below map) -->
+                                <div id="wl-directions-arrow-banner"
+                                     style="display: none; background: linear-gradient(135deg, #5a080e 0%, #7a0c14 100%); padding: 24px 0; text-align: center;">
+                                    <div style="color: #f5c400; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 8px; font-family: 'Poppins', sans-serif;">
+                                        Ikuti arah panah
+                                    </div>
+                                    <div style="position: relative; height: 80px; display: flex; align-items: center; justify-content: center;">
+                                        <div id="wl-directions-arrow-big"
+                                             style="font-size: 64px; color: #f5c400; transition: transform 0.6s ease-out; transform-origin: center center;">
+                                            <i class="fa fa-arrow-up"/>
+                                        </div>
+                                    </div>
+                                    <div id="wl-directions-hint"
+                                         style="color: rgba(255,255,255,0.9); font-size: 14px; margin-top: 8px; font-family: 'Poppins', sans-serif;">
+                                        Menunggu lokasi Anda...
+                                    </div>
+                                </div>
+
+                                <!-- Permission denied / error fallback -->
+                                <div id="wl-directions-error"
+                                     style="display: none; padding: 40px 16px; text-align: center; background: #fff7e0;">
+                                    <div class="container">
+                                        <div style="max-width: 600px; margin: 0 auto;">
+                                            <i class="fa fa-exclamation-triangle"
+                                               style="font-size: 48px; color: #c62828; margin-bottom: 16px;"/>
+                                            <h3 style="color: #7a0c14; font-family: 'Poppins', sans-serif; font-weight: 700; margin-bottom: 12px;">
+                                                Akses Lokasi Diperlukan
+                                            </h3>
+                                            <p style="color: #333; font-size: 15px; line-height: 1.6; margin-bottom: 20px;"
+                                               id="wl-directions-error-msg">
+                                                Untuk menampilkan petunjuk arah real-time, kami memerlukan izin
+                                                mengakses lokasi Anda. Silakan aktifkan izin lokasi di browser,
+                                                lalu muat ulang halaman ini.
+                                            </p>
+                                            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                                                <button onclick="location.reload()"
+                                                        style="background: #7a0c14; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif;">
+                                                    <i class="fa fa-refresh me-2"/>Coba Lagi
+                                                </button>
+                                                <a href="https://www.google.com/maps/dir/?api=1&amp;destination=-8.188092,112.356862"
+                                                   target="_blank" rel="noopener"
+                                                   style="background: #fff; color: #7a0c14; border: 2px solid #7a0c14; padding: 8px 24px; border-radius: 6px; font-weight: 600; text-decoration: none; font-family: 'Poppins', sans-serif; display: inline-block;">
+                                                    <i class="fa fa-map me-2"/>Buka di Google Maps
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="wl-directions-help py-4" style="background: #fff7e0;">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-lg-8 offset-lg-2">
+                                        <h4 style="color: #7a0c14; font-family: 'Poppins', sans-serif; font-weight: 700; margin-bottom: 16px;">
+                                            <i class="fa fa-info-circle me-2"/>Cara Menggunakan
+                                        </h4>
+                                        <ul style="color: #333; font-size: 14px; line-height: 1.8; padding-left: 20px;">
+                                            <li>Izinkan akses lokasi saat browser meminta (ikon gembok di address bar).</li>
+                                            <li>Peta akan otomatis menampilkan posisi Anda (titik biru) dan Warung Lakku (pin maroon).</li>
+                                            <li>Panah besar di bawah peta menunjukkan arah menuju Warung Lakku — ikuti arah panah saat berjalan.</li>
+                                            <li>Informasi jarak dan estimasi waktu jalan diperbarui otomatis saat Anda bergerak.</li>
+                                            <li>Pada perangkat mobile, aktifkan GPS/Location Service dengan presisi tinggi untuk akurasi terbaik.</li>
+                                            <li>Petunjuk arah ini menggunakan garis lurus ("as the crow flies"). Untuk rute jalanan detail, gunakan tombol "Buka di Google Maps" yang muncul jika lokasi tidak terdeteksi.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- ====================================================== -->
+                    <!-- Inline script (boot only on /petunjuk-arah)            -->
+                    <!-- The footer CTA button + CSS live in                    -->
+                    <!-- footer_map_maplibre.xml so they load on every page.    -->
+                    <!-- ====================================================== -->
+                    <script>
+                        (function () {
+                            "use strict";
+                            if (window.location.pathname.indexOf('/petunjuk-arah') === -1) return;
+
+                            // ---- v3.10.27: inject page-specific CSS ----
+                            // (Popup color override + CTA button CSS are injected
+                            // globally by footer_map_maplibre.xml. Here we only
+                            // add page-specific styles for the directions UI.)
+                            (function injectDirectionsCSS() {
+                                if (document.getElementById('wl-directions-css')) return;
+                                var style = document.createElement('st' + 'yle');
+                                style.id = 'wl-directions-css';
+                                style.textContent =
+                                    // User position marker (pulsing blue dot)
+                                    '.wl-user-marker {' +
+                                        'width: 24px; height: 24px; position: relative;' +
+                                    '}' +
+                                    '.wl-user-marker__dot {' +
+                                        'position: absolute; top: 0; left: 0;' +
+                                        'width: 24px; height: 24px;' +
+                                        'background: #1976d2;' +
+                                        'border: 3px solid #fff;' +
+                                        'border-radius: 50%;' +
+                                        'box-shadow: 0 0 6px rgba(0,0,0,0.4);' +
+                                        'z-index: 2;' +
+                                    '}' +
+                                    '.wl-user-marker__pulse {' +
+                                        'position: absolute; top: 0; left: 0;' +
+                                        'width: 24px; height: 24px;' +
+                                        'background: #1976d2;' +
+                                        'border-radius: 50%;' +
+                                        'opacity: 0.5;' +
+                                        'animation: wl-user-pulse 1.8s ease-out infinite;' +
+                                        'z-index: 1;' +
+                                    '}' +
+                                    '@keyframes wl-user-pulse {' +
+                                        '0% { transform: scale(1); opacity: 0.5; }' +
+                                        '70% { transform: scale(2.6); opacity: 0; }' +
+                                        '100% { transform: scale(2.6); opacity: 0; }' +
+                                    '}' +
+                                    // Big direction arrow animation (bouncing toward destination)
+                                    '.wl-direction-arrow-bounce {' +
+                                        'animation: wl-arrow-bounce 1.2s ease-in-out infinite;' +
+                                    '}' +
+                                    '@keyframes wl-arrow-bounce {' +
+                                        '0%, 100% { transform: translateY(0) rotate(var(--wl-arrow-rot, 0deg)); }' +
+                                        '50% { transform: translateY(-12px) rotate(var(--wl-arrow-rot, 0deg)); }' +
+                                    '}';
+                                document.head.appendChild(style);
+                                console.log('WL: directions page CSS injected');
+                            })();
+
+                            // Warung Lakku cabang location (same as footer + modal)
+                            var WL_DEST = { lat: -8.188092, lng: 112.356862 };
+
+                            var BEARING_LABELS = [
+                                'Utara', 'Timur Laut', 'Timur', 'Tenggara',
+                                'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'
+                            ];
+                            function bearingLabel(deg) {
+                                deg = ((deg % 360) + 360) % 360;
+                                return BEARING_LABELS[Math.round(deg / 45) % 8];
+                            }
+                            function haversine(lat1, lng1, lat2, lng2) {
+                                var R = 6371000;
+                                var toRad = Math.PI / 180;
+                                var dLat = (lat2 - lat1) * toRad;
+                                var dLng = (lng2 - lng1) * toRad;
+                                var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                        Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) *
+                                        Math.sin(dLng/2) * Math.sin(dLng/2);
+                                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                            }
+                            function bearing(lat1, lng1, lat2, lng2) {
+                                var toRad = Math.PI / 180, toDeg = 180 / Math.PI;
+                                var phi1 = lat1 * toRad, phi2 = lat2 * toRad;
+                                var dLambda = (lng2 - lng1) * toRad;
+                                var y = Math.sin(dLambda) * Math.cos(phi2);
+                                var x = Math.cos(phi1) * Math.sin(phi2) -
+                                        Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+                                return (Math.atan2(y, x) * toDeg + 360) % 360;
+                            }
+                            function formatDistance(m) {
+                                if (m &lt; 1000) return Math.round(m) + ' m';
+                                return (m / 1000).toFixed(2) + ' km';
+                            }
+                            function formatEta(m) {
+                                var seconds = m / 1.389;  // 5 km/h walking speed
+                                if (seconds &lt; 60) return '&lt; 1 mnt';
+                                var mins = Math.floor(seconds / 60);
+                                if (mins &lt; 60) return mins + ' mnt';
+                                var hrs = Math.floor(mins / 60);
+                                return hrs + 'j ' + (mins % 60) + 'm';
+                            }
+
+                            var map = null, userMarker = null, destMarker = null;
+                            var lineLayer = 'wl-directions-line';
+                            var lineSource = 'wl-directions-line';
+
+                            function loadMapLibre(cb) {
+                                if (window.maplibregl) { cb(); return; }
+                                if (window._wlMapLibreLoading) {
+                                    window._wlMapLibreCallbacks = window._wlMapLibreCallbacks || [];
+                                    window._wlMapLibreCallbacks.push(cb); return;
+                                }
+                                window._wlMapLibreLoading = true;
+                                window._wlMapLibreCallbacks = [cb];
+                                var link = document.createElement('link');
+                                link.rel = 'stylesheet';
+                                link.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+                                document.head.appendChild(link);
+                                var s = document.createElement('script');
+                                s.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+                                s.async = true;
+                                s.onload = function () {
+                                    var cbs = window._wlMapLibreCallbacks;
+                                    window._wlMapLibreCallbacks = [];
+                                    for (var i = 0; i &lt; cbs.length; i++) {
+                                        try { cbs[i](); } catch (e) { console.warn(e); }
+                                    }
+                                };
+                                document.head.appendChild(s);
+                            }
+
+                            function applyCustomMapStyle(m) {
+                                if (!m || !m.getStyle) return;
+                                var layers = m.getStyle().layers || [];
+                                for (var i = 0; i &lt; layers.length; i++) {
+                                    var layer = layers[i];
+                                    var sl = layer['source-layer'] || '';
+                                    var lid = layer.id || '';
+                                    if (layer.type === 'line' &amp;&amp; sl === 'transportation') {
+                                        var color = '#7a0c14';
+                                        if (lid.indexOf('casing') !== -1) color = '#5a080e';
+                                        else if (lid.indexOf('minor') !== -1 ||
+                                                 lid.indexOf('path') !== -1 ||
+                                                 lid.indexOf('pier') !== -1) color = '#a02030';
+                                        try { m.setPaintProperty(lid, 'line-color', color); } catch (e) {}
+                                    }
+                                    if ((layer.type === 'fill' &amp;&amp; sl === 'water') ||
+                                        (layer.type === 'line' &amp;&amp; sl === 'waterway')) {
+                                        try {
+                                            if (layer.type === 'fill') m.setPaintProperty(lid, 'fill-color', '#cfe4f5');
+                                            else m.setPaintProperty(lid, 'line-color', '#a8d0ed');
+                                        } catch (e) {}
+                                    }
+                                    if (layer.type === 'fill' &amp;&amp; sl === 'building') {
+                                        try {
+                                            m.setPaintProperty(lid, 'fill-color', '#fff7e0');
+                                            m.setPaintProperty(lid, 'fill-opacity', 0.9);
+                                        } catch (e) {}
+                                    }
+                                    if (layer.type === 'fill' &amp;&amp; sl === 'landuse') {
+                                        try { m.setPaintProperty(lid, 'fill-color', '#e8f5e8'); } catch (e) {}
+                                    }
+                                }
+                            }
+
+                            function makeUserMarker() {
+                                var el = document.createElement('div');
+                                el.className = 'wl-user-marker';
+                                el.innerHTML =
+                                    '&lt;div class="wl-user-marker__pulse"&gt;&lt;/div&gt;' +
+                                    '&lt;div class="wl-user-marker__dot"&gt;&lt;/div&gt;';
+                                return el;
+                            }
+                            function makeDestMarker() {
+                                var el = document.createElement('div');
+                                el.className = 'wl-cabang-marker';
+                                el.innerHTML =
+                                    '&lt;div class="wl-cabang-marker__pin"&gt;' +
+                                        '&lt;i class="fa fa-shopping-bag"&gt;&lt;/i&gt;' +
+                                    '&lt;/div&gt;' +
+                                    '&lt;div class="wl-cabang-marker__label"&gt;' +
+                                        '&lt;strong&gt;WARUNG LAKKU&lt;/strong&gt;' +
+                                        '&lt;span&gt;Cabang Binangun&lt;/span&gt;' +
+                                    '&lt;/div&gt;';
+                                return el;
+                            }
+
+                            function updateLine(userLat, userLng) {
+                                if (!map) return;
+                                var data = {
+                                    type: 'Feature',
+                                    geometry: {
+                                        type: 'LineString',
+                                        coordinates: [
+                                            [userLng, userLat],
+                                            [WL_DEST.lng, WL_DEST.lat]
+                                        ]
+                                    }
+                                };
+                                if (map.getSource(lineSource)) {
+                                    map.getSource(lineSource).setData(data);
+                                } else {
+                                    map.addSource(lineSource, { type: 'geojson', data: data });
+                                    map.addLayer({
+                                        id: lineLayer,
+                                        type: 'line',
+                                        source: lineSource,
+                                        paint: {
+                                            'line-color': '#7a0c14',
+                                            'line-width': 3,
+                                            'line-dasharray': [2, 2],
+                                            'line-opacity': 0.8
+                                        }
+                                    });
+                                }
+                            }
+
+                            function updateInfo(userLat, userLng, accuracy) {
+                                var dist = haversine(userLat, userLng, WL_DEST.lat, WL_DEST.lng);
+                                var bear = bearing(userLat, userLng, WL_DEST.lat, WL_DEST.lng);
+
+                                var distEl = document.getElementById('wl-directions-distance');
+                                var bearEl = document.getElementById('wl-directions-bearing');
+                                var etaEl  = document.getElementById('wl-directions-eta');
+                                var accEl  = document.getElementById('wl-directions-accuracy');
+                                if (distEl) distEl.textContent = formatDistance(dist);
+                                if (bearEl) bearEl.textContent = bearingLabel(bear) + ' (' + Math.round(bear) + '\u00B0)';
+                                if (etaEl)  etaEl.textContent = formatEta(dist);
+                                if (accEl)  accEl.textContent = '\u00B1' + Math.round(accuracy) + ' m';
+
+                                // Update big arrow rotation.
+                                // Arrow-up icon at rotate(0deg) points to top of screen = NORTH.
+                                // Bearing 90 = EAST = arrow should point right = rotate(90deg) clockwise.
+                                // So rotate by the bearing angle directly.
+                                var bigArrow = document.getElementById('wl-directions-arrow-big');
+                                if (bigArrow) {
+                                    bigArrow.style.setProperty('--wl-arrow-rot', bear + 'deg');
+                                    bigArrow.style.transform = 'rotate(' + bear + 'deg)';
+                                    bigArrow.classList.add('wl-direction-arrow-bounce');
+                                }
+                                var hint = document.getElementById('wl-directions-hint');
+                                if (hint) {
+                                    if (dist &lt; 50) {
+                                        hint.innerHTML = '&lt;i class="fa fa-check-circle me-1" style="color:#25d366"&gt;&lt;/i&gt; Anda sudah dekat Warung Lakku!';
+                                    } else {
+                                        hint.innerHTML = 'Ikuti arah panah menuju Warung Lakku (&lt;strong&gt;' + formatDistance(dist) + '&lt;/strong&gt; lagi).';
+                                    }
+                                }
+                            }
+
+                            function onPosition(pos) {
+                                var lat = pos.coords.latitude;
+                                var lng = pos.coords.longitude;
+                                var acc = pos.coords.accuracy || 0;
+
+                                var info = document.getElementById('wl-directions-info');
+                                if (info) info.style.display = 'block';
+                                var banner = document.getElementById('wl-directions-arrow-banner');
+                                if (banner) banner.style.display = 'block';
+
+                                var status = document.getElementById('wl-directions-status');
+                                if (status) {
+                                    status.innerHTML = '&lt;i class="fa fa-check-circle me-2" style="color:#25d366"&gt;&lt;/i&gt;Lokasi aktif \u00B7 presisi \u00B1' + Math.round(acc) + ' m';
+                                    status.style.background = 'rgba(40, 167, 69, 0.25)';
+                                    status.style.borderColor = '#28a745';
+                                }
+
+                                if (!map) return;
+
+                                if (!userMarker) {
+                                    userMarker = new maplibregl.Marker({
+                                        element: makeUserMarker(),
+                                        rotationAlignment: 'viewport',
+                                        pitchAlignment: 'viewport'
+                                    })
+                                        .setLngLat([lng, lat])
+                                        .addTo(map);
+                                    var bounds = new maplibregl.LngLatBounds();
+                                    bounds.extend([lng, lat]);
+                                    bounds.extend([WL_DEST.lng, WL_DEST.lat]);
+                                    map.fitBounds(bounds, {
+                                        padding: { top: 60, bottom: 60, left: 60, right: 60 },
+                                        duration: 1500
+                                    });
+                                } else {
+                                    userMarker.setLngLat([lng, lat]);
+                                }
+
+                                updateLine(lat, lng);
+                                updateInfo(lat, lng, acc);
+                            }
+
+                            function onPositionError(err) {
+                                console.warn('WL: geolocation error:', err);
+                                var status = document.getElementById('wl-directions-status');
+                                if (status) {
+                                    status.innerHTML = '&lt;i class="fa fa-exclamation-triangle me-2" style="color:#ffc107"&gt;&lt;/i&gt;Lokasi tidak tersedia';
+                                    status.style.background = 'rgba(255, 193, 7, 0.25)';
+                                    status.style.borderColor = '#ffc107';
+                                }
+                                var errorBox = document.getElementById('wl-directions-error');
+                                var errorMsg = document.getElementById('wl-directions-error-msg');
+                                var mapWrap = document.getElementById('wl_directions_map');
+                                var banner = document.getElementById('wl-directions-arrow-banner');
+                                var info = document.getElementById('wl-directions-info');
+                                if (errorBox) errorBox.style.display = 'block';
+                                if (mapWrap) mapWrap.style.display = 'none';
+                                if (banner) banner.style.display = 'none';
+                                if (info) info.style.display = 'none';
+                                if (errorMsg) {
+                                    var msg = 'Tidak dapat mengakses lokasi Anda. ';
+                                    if (err &amp;&amp; err.code === 1) msg += 'Izin lokasi ditolak. Silakan aktifkan izin di pengaturan browser, lalu muat ulang.';
+                                    else if (err &amp;&amp; err.code === 2) msg += 'Posisi tidak tersedia (GPS mungkin sedang dimatikan atau lemah).';
+                                    else if (err &amp;&amp; err.code === 3) msg += 'Waktu permintaan lokasi habis. Coba lagi di area terbuka.';
+                                    else msg += 'Pastikan GPS aktif dan browser diizinkan mengakses lokasi.';
+                                    errorMsg.textContent = msg;
+                                }
+                            }
+
+                            function initMap() {
+                                var container = document.getElementById('wl_directions_map');
+                                if (!container) return;
+                                container.innerHTML = '';
+
+                                loadMapLibre(function () {
+                                    if (!window.maplibregl) {
+                                        console.warn('WL: maplibregl failed to load');
+                                        return;
+                                    }
+                                    map = new maplibregl.Map({
+                                        container: container,
+                                        style: 'https://tiles.openfreemap.org/styles/liberty',
+                                        center: [WL_DEST.lng, WL_DEST.lat],
+                                        zoom: 13,
+                                        bearing: 0, pitch: 0, maxPitch: 0,
+                                        attributionControl: true,
+                                        dragRotate: false, touchPitch: false,
+                                        pitchWithRotate: false, touchZoomRotate: true,
+                                        scrollZoom: true
+                                    });
+                                    try { map.touchZoomRotate.disableRotation(); } catch (e) {}
+                                    try { map.keyboard.disableRotation(); } catch (e) {}
+                                    map.on('rotate', function () {
+                                        if (map.getBearing() !== 0) map.setBearing(0);
+                                    });
+                                    map.on('pitch', function () {
+                                        if (map.getPitch() !== 0) map.setPitch(0);
+                                    });
+                                    map.on('styledata', function () { applyCustomMapStyle(map); });
+
+                                    map.on('load', function () {
+                                        applyCustomMapStyle(map);
+
+                                        destMarker = new maplibregl.Marker({
+                                            element: makeDestMarker(),
+                                            anchor: 'bottom',
+                                            rotationAlignment: 'viewport',
+                                            pitchAlignment: 'viewport'
+                                        })
+                                            .setLngLat([WL_DEST.lng, WL_DEST.lat])
+                                            .setPopup(new maplibregl.Popup({ offset: 30 }).setHTML(
+                                                '&lt;div style="min-width: 200px; font-family: Poppins, sans-serif; padding: 4px; color: #333;"&gt;' +
+                                                    '&lt;strong style="color: #7a0c14; font-size: 14px; display: block; margin-bottom: 2px;"&gt;' +
+                                                        '&lt;i class="fa fa-shopping-bag" style="color: #f5c400;"&gt;&lt;/i&gt; WARUNG LAKKU&lt;/strong&gt;' +
+                                                    '&lt;span style="color: #666; font-size: 11px;"&gt;Cabang Binangun&lt;/span&gt;' +
+                                                    '&lt;hr style="margin: 6px 0; border: 0; border-top: 1px solid #eee;"/&gt;' +
+                                                    '&lt;div style="font-size: 12px; color: #333;"&gt;' +
+                                                        '&lt;i class="fa fa-map-marker" style="color: #7a0c14; width: 14px;"&gt;&lt;/i&gt; Dusun Ngrekesan, Desa Ngadri, Kec. Binangun, Kab. Blitar&lt;/div&gt;' +
+                                                '&lt;/div&gt;'
+                                            ))
+                                            .addTo(map);
+
+                                        map.addControl(new maplibregl.NavigationControl({
+                                            visualizePitch: false, showCompass: false, showZoom: true
+                                        }), 'top-right');
+
+                                        if (!('geolocation' in navigator)) {
+                                            onPositionError({ code: 0, message: 'Geolocation not supported' });
+                                            return;
+                                        }
+                                        navigator.geolocation.watchPosition(
+                                            onPosition,
+                                            onPositionError,
+                                            { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+                                        );
+
+                                        console.log('WL: directions map ready');
+                                    });
+                                });
+                            }
+
+                            if (document.readyState === 'loading') {
+                                document.addEventListener('DOMContentLoaded', initMap);
+                            } else {
+                                initMap();
+                            }
+                        })();
+                    </script>
+                </t>
+            </t>
+        </field>
+    </record>
+
+    <record id="petunjuk_arah_page_link" model="website.page">
+        <field name="url">/petunjuk-arah</field>
+        <field name="view_id" ref="petunjuk_arah_page"/>
+        <field name="website_indexed" eval="False"/>
+        <field name="website_published" eval="True"/>
+        <field name="type">qweb</field>
+    </record>
+
+</odoo>
