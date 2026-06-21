@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        v17.0.3.10.24: Replace the basic OpenStreetMap iframe in the footer
+        with a MapLibre GL map matching the delivery confirmation modal's
+        design (liberty style + maroon roads + cream buildings + cabang
+        marker + 15km service radius + POI enrichment).
+
+        Approach:
+          1. Inherit wl_footer_custom (the existing footer template)
+          2. Replace the .wl-footer-map-embed iframe with a MapLibre
+             container div (#wl_footer_map)
+          3. Inject an IIFE script after the embed that:
+             a. Lazy-loads MapLibre GL via IntersectionObserver (only
+                fetches the ~400KB MapLibre JS when the footer scrolls
+                into view — saves bandwidth on pages the user never
+                scrolls to the bottom of)
+             b. Initializes the map centered on Warung Lakku cabang
+                (-8.188092, 112.356862 — matches modal + wl_osm_enrichment)
+             c. Applies the SAME custom map style as the modal:
+                - Roads: maroon (#7a0c14 / #5a080e / #a02030)
+                - Water: light blue (#cfe4f5)
+                - Buildings: cream (#fff7e0)
+                - Landuse: light green (#e8f5e8)
+                - Boundaries: maroon 40% opacity
+             d. Adds the 15km service-radius circle (maroon dashed)
+             e. Loads POI enrichment from /api/osm/geojson/pois
+                (Indomaret, masjid, sekolah, SPBU, ...) — colored by
+                category, with labels + clickable popups
+             f. Adds the Warung Lakku cabang marker (storefront icon
+                + "WARUNG LAKKU — Cabang Binangun" label + popup with
+                address, WhatsApp, coordinates)
+             g. Adds zoom +/- controls (top-right)
+             h. Disables scrollZoom (so page scroll isn't captured when
+                cursor is over the map) — users zoom via buttons or
+                pinch on mobile
+             i. Re-injects the !important icon override CSS (same as
+                v3.10.22 modal fix) so the cabang marker icon stays
+                upright on mobile across ALL pages, not just /shop/payment
+
+        Map options (same as modal v3.10.18):
+          - bearing: 0, pitch: 0, maxPitch: 0 (never tilt)
+          - dragRotate: false, touchPitch: false, pitchWithRotate: false
+          - touchZoomRotate: true + disableRotation() (pinch-zoom only)
+          - rotate/pitch event listeners snap back to 0 (belt-and-suspenders)
+    -->
+    <template id="wl_footer_map_maplibre"
+              name="WL: Footer Map (MapLibre GL)"
+              inherit_id="theme_warunglakku.wl_footer_custom"
+              priority="20">
+
+        <!-- 1. Replace the iframe with a MapLibre container -->
+        <xpath expr="//div[contains(@class, 'wl-footer-map-embed')]" position="replace">
+            <div class="wl-footer-map-embed rounded shadow-sm overflow-hidden">
+                <div id="wl_footer_map"
+                     style="width: 100%; height: 220px; background: #f5f5f0; position: relative;">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #7a0c14; font-family: 'Poppins', sans-serif; font-size: 13px;">
+                        <i class="fa fa-spinner fa-pulse me-2"/>
+                        Memuat peta Warung Lakku...
+                    </div>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- 2. Inject the lazy-load + init script right after the embed -->
+        <xpath expr="//div[contains(@class, 'wl-footer-map-embed')]" position="after">
+            <script>
+                (function () {
+                    "use strict";
+
+                    // ---- v3.10.24: re-inject !important icon override CSS ----
+                    // The modal's IIFE (in payment_delivery_redesign.xml) only
+                    // runs on /shop/payment. The footer is on EVERY page, so
+                    // we re-inject the same !important rules here with an id
+                    // check to prevent double-injection. This guarantees the
+                    // cabang marker icon stays upright on mobile across all
+                    // pages, not just /shop/payment.
+                    (function injectMarkerStyleOverrides() {
+                        if (document.getElementById('wl-marker-icon-override')) return;
+                        var style = document.createElement('st' + 'yle');
+                        style.id = 'wl-marker-icon-override';
+                        style.textContent =
+                            '.wl-map-modal .wl-cabang-marker__pin .fa,' +
+                            '.wl-map-modal .wl-map-marker__pin .fa,' +
+                            '.wl-footer-map-embed .wl-cabang-marker__pin .fa,' +
+                            '.wl-footer-map-embed .wl-map-marker__pin .fa {' +
+                                'position: absolute !important;' +
+                                'top: 50% !important;' +
+                                'left: 50% !important;' +
+                                'transform: translate(-50%, -50%) rotate(45deg) !important;' +
+                            '}' +
+                            'body .wl-cabang-marker__pin .fa,' +
+                            'body .wl-map-marker__pin .fa {' +
+                                'transform: translate(-50%, -50%) rotate(45deg) !important;' +
+                            '}';
+                        document.head.appendChild(style);
+                        console.log('WL: footer marker icon !important overrides injected');
+                    })();
+
+                    // Warung Lakku cabang location (matches modal + wl_osm_enrichment)
+                    var WL_CABANG = { lat: -8.188092, lng: 112.356862, radiusM: 15000 };
+
+                    // ---- Lazy-load MapLibre via IntersectionObserver ----
+                    // Saves ~400KB of JS on pages where the user never scrolls
+                    // to the footer.
+                    function bootstrapFooterMap() {
+                        var container = document.getElementById('wl_footer_map');
+                        if (!container) return;
+                        if (container._wlMapInit) return;
+
+                        if (!('IntersectionObserver' in window)) {
+                            initFooterMap();
+                            return;
+                        }
+
+                        var io = new IntersectionObserver(function (entries) {
+                            entries.forEach(function (entry) {
+                                if (entry.isIntersecting) {
+                                    io.disconnect();
+                                    initFooterMap();
+                                }
+                            });
+                        }, { rootMargin: '300px' });
+                        io.observe(container);
+                    }
+
+                    function loadMapLibreScript(callback) {
+                        if (window.maplibregl) {
+                            callback();
+                            return;
+                        }
+                        if (window._wlMapLibreLoading) {
+                            window._wlMapLibreCallbacks = window._wlMapLibreCallbacks || [];
+                            window._wlMapLibreCallbacks.push(callback);
+                            return;
+                        }
+                        window._wlMapLibreLoading = true;
+                        window._wlMapLibreCallbacks = [callback];
+
+                        var link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+                        document.head.appendChild(link);
+
+                        var script = document.createElement('script');
+                        script.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+                        script.async = true;
+                        script.onload = function () {
+                            var cbs = window._wlMapLibreCallbacks;
+                            window._wlMapLibreCallbacks = [];
+                            for (var i = 0; i &lt; cbs.length; i++) {
+                                try { cbs[i](); } catch (e) { console.warn(e); }
+                            }
+                        };
+                        document.head.appendChild(script);
+                    }
+
+                    function initFooterMap() {
+                        var container = document.getElementById('wl_footer_map');
+                        if (!container) return;
+                        if (container._wlMapInit) return;
+                        container._wlMapInit = true;
+
+                        loadMapLibreScript(function () {
+                            if (!window.maplibregl) {
+                                console.warn('WL: maplibregl failed to load');
+                                return;
+                            }
+
+                            container.innerHTML = '';
+
+                            var map = new maplibregl.Map({
+                                container: container,
+                                style: 'https://tiles.openfreemap.org/styles/liberty',
+                                center: [WL_CABANG.lng, WL_CABANG.lat],
+                                zoom: 12,
+                                bearing: 0,
+                                pitch: 0,
+                                maxPitch: 0,
+                                attributionControl: true,
+                                dragRotate: false,
+                                touchPitch: false,
+                                pitchWithRotate: false,
+                                touchZoomRotate: true,
+                                scrollZoom: false  // footer map: don't capture page scroll
+                            });
+
+                            try { map.touchZoomRotate.disableRotation(); } catch (e) {}
+                            try { map.keyboard.disableRotation(); } catch (e) {}
+                            map.on('rotate', function () {
+                                if (map.getBearing() !== 0) map.setBearing(0);
+                            });
+                            map.on('pitch', function () {
+                                if (map.getPitch() !== 0) map.setPitch(0);
+                            });
+
+                            map.on('load', function () {
+                                applyCustomMapStyle(map);
+                                addFooterCustomLayers(map);
+                                loadFooterEnrichment(map);
+                            });
+                            map.on('styledata', function () {
+                                applyCustomMapStyle(map);
+                                addFooterCustomLayers(map);
+                            });
+
+                            // ---- Cabang marker (storefront icon + label + popup) ----
+                            var cabangEl = document.createElement('div');
+                            cabangEl.className = 'wl-cabang-marker';
+                            cabangEl.innerHTML =
+                                '&lt;div class="wl-cabang-marker__pin"&gt;' +
+                                    '&lt;i class="fa fa-shopping-bag"&gt;&lt;/i&gt;' +
+                                '&lt;/div&gt;' +
+                                '&lt;div class="wl-cabang-marker__label"&gt;' +
+                                    '&lt;strong&gt;WARUNG LAKKU&lt;/strong&gt;' +
+                                    '&lt;span&gt;Cabang Binangun&lt;/span&gt;' +
+                                '&lt;/div&gt;';
+
+                            var cabangPopup = new maplibregl.Popup({
+                                offset: 30,
+                                closeButton: true,
+                                closeOnClick: true
+                            }).setHTML(
+                                '&lt;div style="min-width: 220px; font-family: Poppins, sans-serif; padding: 4px;"&gt;' +
+                                    '&lt;strong style="color: #7a0c14; font-size: 14px; display: block; margin-bottom: 2px;"&gt;' +
+                                        '&lt;i class="fa fa-shopping-bag" style="color: #f5c400;"&gt;&lt;/i&gt; WARUNG LAKKU' +
+                                    '&lt;/strong&gt;' +
+                                    '&lt;span style="color: #666; font-size: 11px; display: block; margin-bottom: 6px;"&gt;Cabang Binangun&lt;/span&gt;' +
+                                    '&lt;hr style="margin: 6px 0; border: 0; border-top: 1px solid #eee;"/&gt;' +
+                                    '&lt;div style="font-size: 12px; color: #333; line-height: 1.6;"&gt;' +
+                                        '&lt;div style="margin-bottom: 4px;"&gt;' +
+                                            '&lt;i class="fa fa-map-marker" style="color: #7a0c14; width: 14px;"&gt;&lt;/i&gt; ' +
+                                            'Dusun Ngrekesan, Desa Ngadri, Kec. Binangun,&lt;br/&gt;' +
+                                            '&lt;span style="margin-left: 18px;"&gt;Kab. Blitar, Jawa Timur 66193&lt;/span&gt;' +
+                                        '&lt;/div&gt;' +
+                                        '&lt;div style="margin-bottom: 4px;"&gt;' +
+                                            '&lt;i class="fa fa-whatsapp" style="color: #25d366; width: 14px;"&gt;&lt;/i&gt; ' +
+                                            '&lt;a href="https://wa.me/6285733556953" target="_blank" rel="noopener" style="color: #1976d2;"&gt;+62 857-3355-6953&lt;/a&gt;' +
+                                        '&lt;/div&gt;' +
+                                        '&lt;div&gt;' +
+                                            '&lt;i class="fa fa-location-arrow" style="color: #7a0c14; width: 14px;"&gt;&lt;/i&gt; ' +
+                                            '&lt;a href="https://www.openstreetmap.org/?mlat=-8.188092&amp;amp;mlon=112.356862#map=15/-8.188092/112.356862" target="_blank" rel="noopener" style="color: #1976d2;"&gt;-8.188092, 112.356862&lt;/a&gt;' +
+                                        '&lt;/div&gt;' +
+                                    '&lt;/div&gt;' +
+                                '&lt;/div&gt;'
+                            );
+
+                            new maplibregl.Marker({
+                                element: cabangEl,
+                                anchor: 'bottom',
+                                rotationAlignment: 'viewport',
+                                pitchAlignment: 'viewport'
+                            })
+                                .setLngLat([WL_CABANG.lng, WL_CABANG.lat])
+                                .setPopup(cabangPopup)
+                                .addTo(map);
+
+                            // Zoom controls (top-right, no compass)
+                            map.addControl(new maplibregl.NavigationControl({
+                                visualizePitch: false,
+                                showCompass: false,
+                                showZoom: true
+                            }), 'top-right');
+
+                            window._wl_footer_map = map;
+                            console.log('WL: footer MapLibre map initialized');
+                        });
+                    }
+
+                    // ---- helpers (duplicated from modal, scoped to footer IIFE) ----
+                    function applyCustomMapStyle(map) {
+                        if (!map || !map.getStyle) return;
+                        var layers = map.getStyle().layers || [];
+                        for (var i = 0; i &lt; layers.length; i++) {
+                            var layer = layers[i];
+                            var sl = layer['source-layer'] || '';
+                            var lid = layer.id || '';
+
+                            if (layer.type === 'line' &amp;&amp; sl === 'transportation') {
+                                var color = '#7a0c14';
+                                if (lid.indexOf('casing') !== -1) color = '#5a080e';
+                                else if (lid.indexOf('minor') !== -1 ||
+                                         lid.indexOf('path') !== -1 ||
+                                         lid.indexOf('pier') !== -1) color = '#a02030';
+                                try { map.setPaintProperty(lid, 'line-color', color); } catch (e) {}
+                            }
+
+                            if ((layer.type === 'fill' &amp;&amp; sl === 'water') ||
+                                (layer.type === 'line' &amp;&amp; sl === 'waterway')) {
+                                try {
+                                    if (layer.type === 'fill') {
+                                        map.setPaintProperty(lid, 'fill-color', '#cfe4f5');
+                                    } else {
+                                        map.setPaintProperty(lid, 'line-color', '#a8d0ed');
+                                    }
+                                } catch (e) {}
+                            }
+
+                            if (layer.type === 'fill' &amp;&amp; sl === 'building') {
+                                try {
+                                    map.setPaintProperty(lid, 'fill-color', '#fff7e0');
+                                    map.setPaintProperty(lid, 'fill-opacity', 0.9);
+                                } catch (e) {}
+                            }
+
+                            if (layer.type === 'fill' &amp;&amp; sl === 'landuse') {
+                                try { map.setPaintProperty(lid, 'fill-color', '#e8f5e8'); } catch (e) {}
+                            }
+
+                            if (layer.type === 'line' &amp;&amp; sl === 'aeroway') {
+                                try { map.setPaintProperty(lid, 'line-color', '#b03040'); } catch (e) {}
+                            }
+
+                            if (layer.type === 'line' &amp;&amp; sl === 'boundary') {
+                                try {
+                                    map.setPaintProperty(lid, 'line-color', '#7a0c14');
+                                    map.setPaintProperty(lid, 'line-opacity', 0.4);
+                                } catch (e) {}
+                            }
+                        }
+                    }
+
+                    function makeCircleGeoJSON(centerLat, centerLng, radiusM, segments) {
+                        var coords = [];
+                        var R = 6378137;
+                        for (var i = 0; i &lt;= segments; i++) {
+                            var bearing = (i * 360 / segments) * Math.PI / 180;
+                            var lat1 = centerLat * Math.PI / 180;
+                            var lng1 = centerLng * Math.PI / 180;
+                            var dByR = radiusM / R;
+                            var lat2 = Math.asin(
+                                Math.sin(lat1) * Math.cos(dByR) +
+                                Math.cos(lat1) * Math.sin(dByR) * Math.cos(bearing));
+                            var lng2 = lng1 + Math.atan2(
+                                Math.sin(bearing) * Math.sin(dByR) * Math.cos(lat1),
+                                Math.cos(dByR) - Math.sin(lat1) * Math.sin(lat2));
+                            coords.push([lng2 * 180 / Math.PI, lat2 * 180 / Math.PI]);
+                        }
+                        return {
+                            type: 'Feature',
+                            geometry: { type: 'Polygon', coordinates: [coords] },
+                            properties: { radiusM: radiusM }
+                        };
+                    }
+
+                    function addFooterCustomLayers(map) {
+                        try {
+                            if (!map.getSource('wl-footer-cabang-radius')) {
+                                map.addSource('wl-footer-cabang-radius', {
+                                    type: 'geojson',
+                                    data: makeCircleGeoJSON(
+                                        WL_CABANG.lat, WL_CABANG.lng,
+                                        WL_CABANG.radiusM, 64)
+                                });
+                                map.addLayer({
+                                    id: 'wl-footer-cabang-radius-fill',
+                                    type: 'fill',
+                                    source: 'wl-footer-cabang-radius',
+                                    paint: {
+                                        'fill-color': '#7a0c14',
+                                        'fill-opacity': 0.06
+                                    }
+                                });
+                                map.addLayer({
+                                    id: 'wl-footer-cabang-radius-stroke',
+                                    type: 'line',
+                                    source: 'wl-footer-cabang-radius',
+                                    paint: {
+                                        'line-color': '#7a0c14',
+                                        'line-width': 1.5,
+                                        'line-dasharray': [4, 3],
+                                        'line-opacity': 0.7
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('WL: footer cabang radius failed:', e.message);
+                        }
+                    }
+
+                    function loadFooterEnrichment(map) {
+                        if (map._wlFooterEnrichmentLoaded) return;
+                        map._wlFooterEnrichmentLoaded = true;
+
+                        var COLOR_BY_CATEGORY = {
+                            'minimarket': '#1976d2',
+                            'masjid':     '#2e7d32',
+                            'sekolah':    '#f57c00',
+                            'spbu':       '#c62828',
+                            'pasar':      '#6a1b9a',
+                            'kesehatan':  '#00838f',
+                            'lainnya':    '#546e7a'
+                        };
+
+                        var url = '/api/osm/geojson/pois' +
+                            '?lat=' + encodeURIComponent(WL_CABANG.lat) +
+                            '&amp;lon=' + encodeURIComponent(WL_CABANG.lng) +
+                            '&amp;radius=5000&amp;limit=300';
+                        fetch(url, { credentials: 'same-origin' })
+                            .then(function (r) { return r.json(); })
+                            .then(function (geojson) {
+                                if (!geojson || !geojson.features || !geojson.features.length) {
+                                    console.log('WL: footer enrichment POIs empty');
+                                    return;
+                                }
+                                if (map.getSource('wl-footer-enriched-pois')) return;
+                                map.addSource('wl-footer-enriched-pois', {
+                                    type: 'geojson',
+                                    data: geojson
+                                });
+
+                                var catCases = [];
+                                Object.keys(COLOR_BY_CATEGORY).forEach(function (cat) {
+                                    catCases.push(cat);
+                                    catCases.push(COLOR_BY_CATEGORY[cat]);
+                                });
+
+                                map.addLayer({
+                                    id: 'wl-footer-enriched-pois-circle',
+                                    type: 'circle',
+                                    source: 'wl-footer-enriched-pois',
+                                    minzoom: 11,
+                                    paint: {
+                                        'circle-radius': {
+                                            stops: [[11, 2.5], [13, 4], [15, 6], [17, 8]]
+                                        },
+                                        'circle-color': ['match',
+                                            ['get', 'landmark_category']
+                                        ].concat(catCases).concat(['#546e7a']),
+                                        'circle-stroke-color': '#ffffff',
+                                        'circle-stroke-width': 1.5,
+                                        'circle-opacity': 0.95
+                                    }
+                                });
+
+                                map.addLayer({
+                                    id: 'wl-footer-enriched-pois-label',
+                                    type: 'symbol',
+                                    source: 'wl-footer-enriched-pois',
+                                    minzoom: 13,
+                                    layout: {
+                                        'text-field': ['get', 'name'],
+                                        'text-size': {
+                                            stops: [[13, 9], [15, 11], [17, 13]]
+                                        },
+                                        'text-font': ['Noto Sans Bold'],
+                                        'text-offset': [0, 1.4],
+                                        'text-anchor': 'top',
+                                        'text-allow-overlap': false,
+                                        'text-ignore-placement': false
+                                    },
+                                    paint: {
+                                        'text-color': '#1a1a1a',
+                                        'text-halo-color': '#ffffff',
+                                        'text-halo-width': 2.5
+                                    }
+                                });
+
+                                // Popup on click
+                                var popup = new maplibregl.Popup({
+                                    closeButton: true,
+                                    closeOnClick: true,
+                                    offset: 10
+                                });
+                                map.on('click', 'wl-footer-enriched-pois-circle', function (e) {
+                                    if (!e.features || !e.features.length) return;
+                                    var f = e.features[0];
+                                    var p = f.properties || {};
+                                    var html = '&lt;div style="min-width:160px;font-family:sans-serif;font-size:12px;line-height:1.5"&gt;';
+                                    html += '&lt;strong style="font-size:13px;color:#7a0c14"&gt;' +
+                                            (p.name || '(tanpa nama)') + '&lt;/strong&gt;&lt;br/&gt;';
+                                    if (p.landmark_category) {
+                                        html += '&lt;span style="color:#666"&gt;Kategori: &lt;/span&gt;' +
+                                                p.landmark_category + '&lt;br/&gt;';
+                                    }
+                                    if (p.distance_m !== undefined &amp;&amp; p.distance_m !== null) {
+                                        html += '&lt;span style="color:#666"&gt;Jarak: &lt;/span&gt;' +
+                                                p.distance_m + ' m';
+                                    }
+                                    html += '&lt;/div&gt;';
+                                    popup.setLngLat(f.geometry.coordinates)
+                                        .setHTML(html)
+                                        .addTo(map);
+                                });
+                                map.on('mouseenter', 'wl-footer-enriched-pois-circle', function () {
+                                    map.getCanvas().style.cursor = 'pointer';
+                                });
+                                map.on('mouseleave', 'wl-footer-enriched-pois-circle', function () {
+                                    map.getCanvas().style.cursor = '';
+                                });
+
+                                console.log('WL: footer enrichment POIs loaded: ' + geojson.features.length);
+                            })
+                            .catch(function (e) {
+                                console.warn('WL: footer enrichment POIs failed:', e);
+                            });
+                    }
+
+                    // ---- boot ----
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', bootstrapFooterMap);
+                    } else {
+                        bootstrapFooterMap();
+                    }
+                })();
+            </script>
+        </xpath>
+    </template>
+</odoo>
