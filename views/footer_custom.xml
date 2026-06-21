@@ -151,4 +151,29 @@
             </div>
         </xpath>
     </template>
+
+    <!--
+        v3.10.30: Replace the footer copyright placeholder text.
+
+        Odoo ships an inherited view `website.footer_copyright_company_name`
+        that does an xpath on website.layout to swap the copyright span
+        content with the literal text "Copyright &copy; Nama perusahaan"
+        (id_ID) / "Copyright &copy; Company name" (en_US). The text is NOT
+        pulled from res.company — it is hardcoded in that view's arch_db.
+
+        To override it cleanly without editing the DB directly, we register
+        our own inherited view on website.layout with priority=100 (higher
+        than the default 99) so it applies AFTER the built-in override and
+        wins. We replace the entire span so the final rendered text reads:
+            Copyright &copy; Warung Lakku
+    -->
+    <template id="wl_footer_copyright_warunglakku"
+              name="WL: Footer Copyright Warung Lakku"
+              inherit_id="website.layout"
+              priority="100">
+        <xpath expr="//footer//span[contains(@class, 'o_footer_copyright_name')]"
+               position="replace">
+            <span class="o_footer_copyright_name me-2">Copyright &amp;copy; Warung Lakku</span>
+        </xpath>
+    </template>
 </odoo>
