@@ -251,6 +251,38 @@
                 (function () {
                     "use strict";
 
+                    // ---- v3.10.22: inject !important CSS overrides for marker icons ----
+                    // Odoo ships a mobile media query in web.assets_frontend:
+                    //   @media (max-width: 767.98px) {
+                    //     .fa:where(:not(...)) { transform: none !important; }
+                    //   }
+                    // This nukes the +45deg counter-rotation on our pin icons on
+                    // mobile devices, leaving them tilted -45deg with the pin.
+                    // The SCSS compiler strips !important from our SCSS rules,
+                    // so we inject them via JS &lt;style&gt; tag instead.
+                    (function injectMarkerStyleOverrides() {
+                        if (document.getElementById('wl-marker-icon-override')) return;
+                        var style = document.createElement('st' + 'yle');
+                        style.id = 'wl-marker-icon-override';
+                        style.textContent =
+                            // High-specificity selectors + !important (JS-injected
+                            // so SCSS compiler can't strip the !important)
+                            '.wl-map-modal .wl-cabang-marker__pin .fa,' +
+                            '.wl-map-modal .wl-map-marker__pin .fa {' +
+                                'position: absolute !important;' +
+                                'top: 50% !important;' +
+                                'left: 50% !important;' +
+                                'transform: translate(-50%, -50%) rotate(45deg) !important;' +
+                            '}' +
+                            // Even higher specificity belt-and-suspenders
+                            'body .wl-cabang-marker__pin .fa,' +
+                            'body .wl-map-marker__pin .fa {' +
+                                'transform: translate(-50%, -50%) rotate(45deg) !important;' +
+                            '}';
+                        document.head.appendChild(style);
+                        console.log('WL: marker icon !important overrides injected');
+                    })();
+
                     // ---- error keyword detection (for GPS warning) ----
                     var ERROR_KEYWORDS = [
                         "pilih untuk menghitung",
@@ -1056,7 +1088,7 @@
                             cabangEl.className = 'wl-cabang-marker';
                             cabangEl.innerHTML =
                                 '&lt;div class="wl-cabang-marker__pin"&gt;' +
-                                    '&lt;i class="fa fa-shopping-basket"&gt;&lt;/i&gt;' +
+                                    '&lt;i class="fa fa-shopping-bag"&gt;&lt;/i&gt;' +
                                 '&lt;/div&gt;' +
                                 '&lt;div class="wl-cabang-marker__label"&gt;' +
                                     '&lt;strong&gt;WARUNG LAKKU&lt;/strong&gt;' +
@@ -1084,7 +1116,7 @@
                                     '&lt;div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"&gt;' +
                                         '&lt;div style="width:32px;height:32px;border-radius:50%;background:#7a0c14;' +
                                              'color:#fff;display:flex;align-items:center;justify-content:center;' +
-                                             'font-size:14px"&gt;&lt;i class="fa fa-shopping-basket"&gt;&lt;/i&gt;&lt;/div&gt;' +
+                                             'font-size:14px"&gt;&lt;i class="fa fa-shopping-bag"&gt;&lt;/i&gt;&lt;/div&gt;' +
                                         '&lt;div&gt;' +
                                             '&lt;div style="font-weight:700;color:#7a0c14;font-size:14px;line-height:1.1"&gt;' +
                                                 'WARUNG LAKKU&lt;/div&gt;' +

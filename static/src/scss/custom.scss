@@ -3229,9 +3229,16 @@ details.wl_oh_mobile {
 
     .fa {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(45deg);
+        top: 50% !important;
+        left: 50% !important;
+        // v3.10.20: !important needed because Odoo ships a mobile media query
+        // @media (max-width: 767.98px) {
+        //   .fa:where(:not(...)) { transform: none !important; }
+        // }
+        // That rule nukes our counter-rotation on phones, leaving the icon
+        // tilted -45deg with the pin. Override with !important + higher
+        // specificity selector (also added below as a backup).
+        transform: translate(-50%, -50%) rotate(45deg) !important;
         color: #ffffff;
         font-size: 14px;
     }
@@ -3279,12 +3286,27 @@ details.wl_oh_mobile {
 
     .fa {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(45deg);
+        top: 50% !important;
+        left: 50% !important;
+        // v3.10.20: !important to defeat Odoo mobile media query
+        // @media (max-width: 767.98px) {
+        //   .fa:where(:not(...)) { transform: none !important; }
+        // }
+        transform: translate(-50%, -50%) rotate(45deg) !important;
         color: #fff7e0;
         font-size: 18px;
     }
+}
+
+// v3.10.20: Extra-high-specificity backup selector to make absolutely
+// sure the Odoo mobile rule can't override us. Specificity:
+//   .wl-cabang-marker__pin .fa  = 0,2,0
+//   .fa:where(...)              = 0,1,0  (:where() contributes 0)
+// Our 0,2,0 already wins, but with !important the cascade is
+// explicit and future-proof. Same for the user marker below.
+.wl-map-modal .wl-cabang-marker__pin .fa,
+.wl-map-modal .wl-map-marker__pin .fa {
+    transform: translate(-50%, -50%) rotate(45deg) !important;
 }
 
 @keyframes wl-cabang-pulse {
