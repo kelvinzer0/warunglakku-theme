@@ -893,19 +893,36 @@
                                 style: 'https://tiles.openfreemap.org/styles/liberty',
                                 center: [lng, lat],
                                 zoom: 16,
+                                bearing: 0,           // v3.10.18: start north
+                                pitch: 0,             // v3.10.18: start flat
+                                maxPitch: 0,          // v3.10.18: NEVER allow tilt
                                 attributionControl: true,
-                                // v3.10.16: Lock map orientation on mobile.
-                                // Disable all rotation/pitch gestures so the
-                                // map (and HTML markers) never tilt or spin
-                                // when user does two-finger pinch on touch
-                                // devices. This keeps both the cabang pin
-                                // and the user delivery pin perfectly upright.
+                                // v3.10.17/18: Lock map orientation on mobile so
+                                // HTML markers (cabang + user) never rotate or tilt.
                                 dragRotate: false,
                                 touchPitch: false,
-                                touchZoomRotate: true  // pinch-zoom OK, but rotation disabled above
+                                pitchWithRotate: false,  // v3.10.18: don't pitch when rotating
+                                touchZoomRotate: true    // keep pinch-zoom; rotation disabled below
                             });
-                            // Extra safety: also disable keyboard rotation
+                            // v3.10.18: CRITICAL — touchZoomRotate:true enables BOTH
+                            // pinch-zoom AND pinch-rotate. Must call disableRotation()
+                            // separately to keep zoom but kill rotation on mobile.
+                            try { mapInstance.touchZoomRotate.disableRotation(); } catch(e) {}
+                            // Disable keyboard rotation too
                             try { mapInstance.keyboard.disableRotation(); } catch(e) {}
+                            // v3.10.18: Ultimate defense — if any rotation somehow
+                            // sneaks through (programmatic, style change, etc.),
+                            // snap bearing back to 0 instantly.
+                            mapInstance.on('rotate', function () {
+                                if (mapInstance.getBearing() !== 0) {
+                                    mapInstance.setBearing(0);
+                                }
+                            });
+                            mapInstance.on('pitch', function () {
+                                if (mapInstance.getPitch() !== 0) {
+                                    mapInstance.setPitch(0);
+                                }
+                            });
 
                             // Expose for debugging (v3.10.13)
                             window._wl_map = mapInstance;
