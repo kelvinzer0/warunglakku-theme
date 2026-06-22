@@ -3477,21 +3477,16 @@ details.wl_oh_mobile {
 
 
 // ============================================================
-// HEADER LOGO — Default Odoo style + width:100% (v17.0.3.10.42)
+// HEADER LOGO — Minimal: width:100% + max-width cap (v17.0.3.10.43)
 //
-// USER FEEDBACK: "kembalikan style bawaan saja h-xterserah w-full
-//   jangan banyak otakatik" — restore default Odoo behavior, only
-//   add width:100% on img so logo fills container. Height auto.
-//
-// History (don't repeat these mistakes):
-//   v3.10.33-v3.10.38: Over-engineered with fixed container widths
-//     (240px → 629px) + max-height clamps. Caused aspect-ratio
-//     battles and X-position drift on affix.
-//   v3.10.39-v3.10.40: Reduced dims but kept same architecture.
-//   v3.10.41: Added transform:translate(-50%,-50%) to fix X drift.
-//     Worked but user said "jangan banyak otakatik".
-//   v3.10.42: Nuke all custom positioning. Just width:100% on img.
-//     Let Odoo's default container behavior handle everything else.
+// USER FEEDBACK HISTORY:
+//   v3.10.42: "kembalikan style bawaan, h-xterserah w-full, jangan
+//     banyak otakatik" → applied width:100% + height:auto only.
+//   v3.10.43: "logonya kegedean bang" → width:100% alone made the
+//     img fill the whole .navbar-brand container (way too big).
+//     Added max-width:180px cap so it scales down on small screens
+//     but never blows up beyond 180px on desktop. Still honors the
+//     "w-full, jangan otakatik" intent — one extra line only.
 // ============================================================
 
 header .navbar-brand.logo,
@@ -3500,5 +3495,6 @@ header.o_header .navbar-brand.logo,
     img {
         width: 100% !important;
         height: auto !important;
+        max-width: 180px !important;
     }
 }
