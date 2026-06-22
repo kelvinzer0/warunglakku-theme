@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!--
+        Asset bundle declarations for theme_warunglakku.
+        Touch this comment timestamp on every deploy to force Odoo
+        to regenerate the asset bundle with a NEW url hash, which
+        bypasses CDN/Cloudflare cache (otherwise stale CSS gets
+        served for users without cache-buster query param).
+
+        Last touched: v3.10.42 (2026-06-22 03:45 UTC)
+    -->
+
     <record id="asset_frontend_custom" model="ir.asset">
         <field name="name">Warung Lakku Custom Styles</field>
         <field name="bundle">web.assets_frontend</field>

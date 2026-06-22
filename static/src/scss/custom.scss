@@ -1030,7 +1030,7 @@ h1, h2, h3, h4, h5, h6 {
 // ============================================================
 
 // ============================================================
-// FOOTER LINKS — Gradient Ball Bullets (v17.0.3.10.31)
+// FOOTER LINKS — Gradient Ball Bullets (v17.0.3.10.32 + v3.10.39)
 //
 // Style the "Link yang Berguna" list in the footer with
 // gradient ball bullets (small circle dengan radial gradient
@@ -1038,40 +1038,56 @@ h1, h2, h3, h4, h5, h6 {
 // seperti bola 3D di atas background maroon gelap footer).
 //
 // Tiap <li> punya ::before pseudo-element sebagai bullet ball:
-//   - 8px diameter, border-radius 50%
+//   - 10px diameter, border-radius 50%
 //   - radial-gradient: highlight kuning di kiri-atas (highlight),
 //     mid orange, dark maroon di kanan-bawah (shadow)
 //   - box-shadow: outer dark glow + inner highlight
 //   - transition: scale + brightness on hover
 //
-// Hover state: ball scales 1.25x + rotate sedikit, link text
+// Hover state: ball scales 1.35x + rotate 15deg, link text
 // bergeser kanan 4px dan warna naik ke yellow terang.
+//
+// v3.10.32 fix: Odoo's default `.o_footer .list-unstyled > li`
+// has specificity (0,2,1) which beats the original v3.10.31
+// `#footer .wl-footer-links` (0,1,1). Fixed with TRIPLE-LOCK
+// selector `.o_footer #footer ul.wl-footer-links, footer#footer
+// ul.wl-footer-links, #footer ul.wl-footer-links.wl-footer-links`
+// (specificity 0,3,1) + `!important` on all critical props.
+//
+// v3.10.39: Re-applied after the local file regressed back to
+// v3.10.31 weak version (the v3.10.32 fix was deployed directly
+// to container but never committed to local repo, so subsequent
+// deploys v3.10.33-v3.10.38 overwrote the fix). Now properly
+// committed locally.
 // ============================================================
-#footer .wl-footer-links {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 0;
+.o_footer #footer ul.wl-footer-links,
+footer#footer ul.wl-footer-links,
+#footer ul.wl-footer-links.wl-footer-links {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin-bottom: 0 !important;
 
     li {
-        position: relative;
-        padding-left: 18px;  // ruang untuk bullet ball
-        margin-bottom: 10px;
-        line-height: 1.5;
+        position: relative !important;
+        padding-left: 18px !important;  // ruang untuk bullet ball
+        margin-bottom: 10px !important;
+        line-height: 1.5 !important;
+        list-style: none !important;
 
         &:last-child {
-            margin-bottom: 0;
+            margin-bottom: 0 !important;
         }
 
         // The gradient ball bullet
         &::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
+            content: '' !important;
+            position: absolute !important;
+            display: block !important;
+            left: 0 !important;
+            top: 6px !important;  // fixed top instead of translateY(-50%) — more reliable
+            width: 10px !important;
+            height: 10px !important;
+            border-radius: 50% !important;
             // Radial gradient: highlight kuning (kiri-atas) → orange → maroon (kanan-bawah)
             // Mirror the position of a light source top-left → bola 3D effect
             background:
@@ -1081,39 +1097,39 @@ h1, h2, h3, h4, h5, h6 {
                     #f5c400 35%,
                     #d97706 70%,
                     #7a0c14 100%
-                );
+                ) !important;
             // Outer dark glow (depth) + inner top highlight (specular)
             box-shadow:
                 0 0 0 1px rgba(0, 0, 0, 0.25),       // ring pemisah dari background
                 0 1px 2px rgba(0, 0, 0, 0.4),         // drop shadow
                 inset 0 -1px 1px rgba(122, 12, 20, 0.6),  // bottom inner shadow
-                inset 0 1px 1px rgba(255, 255, 255, 0.35); // top inner highlight
+                inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;  // top inner highlight
             transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        box-shadow 0.25s ease;
+                        box-shadow 0.25s ease !important;
         }
 
         a {
-            color: rgba(255, 255, 255, 0.92);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;
-            display: inline-block;
+            color: rgba(255, 255, 255, 0.92) !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+            transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease !important;
+            display: inline-block !important;
         }
 
         // Hover: ball scales + rotates, link geser kanan + kuning terang
         &:hover {
             &::before {
-                transform: translateY(-50%) scale(1.35) rotate(15deg);
+                transform: scale(1.35) rotate(15deg) !important;
                 box-shadow:
                     0 0 0 1px rgba(0, 0, 0, 0.25),
                     0 2px 6px rgba(245, 196, 0, 0.55),  // glow kuning
                     inset 0 -1px 1px rgba(122, 12, 20, 0.6),
-                    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+                    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
             }
             a {
-                color: #ffd84d;
-                transform: translateX(4px);
-                text-shadow: 0 1px 4px rgba(245, 196, 0, 0.35);
+                color: #ffd84d !important;
+                transform: translateX(4px) !important;
+                text-shadow: 0 1px 4px rgba(245, 196, 0, 0.35) !important;
             }
         }
     }
@@ -3459,3 +3475,30 @@ details.wl_oh_mobile {
 }
 
 
+
+// ============================================================
+// HEADER LOGO — Default Odoo style + width:100% (v17.0.3.10.42)
+//
+// USER FEEDBACK: "kembalikan style bawaan saja h-xterserah w-full
+//   jangan banyak otakatik" — restore default Odoo behavior, only
+//   add width:100% on img so logo fills container. Height auto.
+//
+// History (don't repeat these mistakes):
+//   v3.10.33-v3.10.38: Over-engineered with fixed container widths
+//     (240px → 629px) + max-height clamps. Caused aspect-ratio
+//     battles and X-position drift on affix.
+//   v3.10.39-v3.10.40: Reduced dims but kept same architecture.
+//   v3.10.41: Added transform:translate(-50%,-50%) to fix X drift.
+//     Worked but user said "jangan banyak otakatik".
+//   v3.10.42: Nuke all custom positioning. Just width:100% on img.
+//     Let Odoo's default container behavior handle everything else.
+// ============================================================
+
+header .navbar-brand.logo,
+header.o_header .navbar-brand.logo,
+.o_header .navbar-brand.logo {
+    img {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
