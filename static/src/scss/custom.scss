@@ -3504,9 +3504,17 @@ header.o_header .navbar-brand.logo,
 // nav-links top-aligned inside the 60px-tall navbar-nav container
 // that stretched to match logo height. Result: links look 10px too
 // high vs logo center. Fix = center them.
-// (v17.0.3.10.44)
-header .navbar-nav,
-header.o_header .navbar-nav,
-.o_header .navbar-nav {
-    align-items: center !important;
+//
+// IMPORTANT: only apply at lg breakpoint (≥992px). Below that, Odoo's
+// navbar collapses into a hamburger and .navbar-nav switches to
+// flex-direction: column. Applying align-items: center there would
+// horizontally center (X-axis) all menu items inside the hamburger
+// panel — looks broken. Mobile must stay default (stretch = left-aligned).
+// (v17.0.3.10.45)
+@media (min-width: 992px) {
+    header .navbar-nav,
+    header.o_header .navbar-nav,
+    .o_header .navbar-nav {
+        align-items: center !important;
+    }
 }
