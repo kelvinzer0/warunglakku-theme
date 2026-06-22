@@ -3498,3 +3498,15 @@ header.o_header .navbar-brand.logo,
         max-width: 180px !important;
     }
 }
+
+// Vertically center nav links against the (now taller) logo.
+// Bootstrap default is align-items: stretch which leaves 40px-tall
+// nav-links top-aligned inside the 60px-tall navbar-nav container
+// that stretched to match logo height. Result: links look 10px too
+// high vs logo center. Fix = center them.
+// (v17.0.3.10.44)
+header .navbar-nav,
+header.o_header .navbar-nav,
+.o_header .navbar-nav {
+    align-items: center !important;
+}
