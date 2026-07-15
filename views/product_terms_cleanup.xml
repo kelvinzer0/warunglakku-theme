@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Warung Lakku - Remove "30-day money-back guarantee" and
+        "Shipping: 2-3 Business Days" text from product detail page.
+
+        The base website_sale.product_custom_text template injects 3 lines
+        under the product price:
+          - Syarat dan Ketentuan (Terms link)
+          - 30-day money-back guarantee
+          - Shipping: 2-3 Business Days
+
+        For Warung Lakku, the money-back & shipping promises don't apply
+        (we're a food delivery business, not a SaaS/product reseller).
+        Replace the <p> element with just the Terms link, keeping the
+        layout intact.
+
+        Template: website_sale.product_custom_text
+        XPath:    //div[@id='o_product_terms_and_share']/p
+        Action:   replace <p> with shortened version
+
+        Author: Kelvin Yuli Andrian
+        Since:   v17.0.3.10.46
+    -->
+    <template id="wl_remove_product_terms_extra"
+              name="WL: Remove product terms extra (money-back + shipping)"
+              inherit_id="website_sale.product_custom_text"
+              priority="99">
+        <xpath expr="//div[@id='o_product_terms_and_share']/p" position="replace">
+            <p class="text-muted mb-0">
+                <a href="/terms" class="text-muted"><u>Syarat dan Ketentuan</u></a>
+            </p>
+        </xpath>
+    </template>
+</odoo>
