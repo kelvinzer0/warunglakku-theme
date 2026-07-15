@@ -29,14 +29,14 @@
 import publicWidget from "@web/legacy/js/public/public_widget";
 
 const WL_CART_SUBMIT = publicWidget.Widget.extend({
-    selector: "body",
+    selector: "#wrapwrap",
 
     start: function () {
         this._super.apply(this, arguments);
-        // Bind to form submit via event delegation.
-        // This catches ALL forms posting to /shop/cart/update (both
-        // product detail page and listing page product cards).
-        // Use namespace to avoid duplicate bindings if widget restarts.
+        // Bind to form submit via event delegation on document.
+        // Using document (not this.$el) so we catch ALL forms including
+        // ones added dynamically after widget start.
+        // Namespace .wl_cart for clean unbind on destroy.
         $(document).on(
             "submit.wl_cart",
             'form[action*="/shop/cart/update"]',
