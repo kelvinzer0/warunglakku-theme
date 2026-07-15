@@ -8,7 +8,7 @@
         bypasses CDN/Cloudflare cache (otherwise stale CSS gets
         served for users without cache-buster query param).
 
-        Last touched: v3.10.45 (2026-06-22 05:00 UTC)
+        Last touched: v3.10.48 (2026-07-15 04:45 UTC)
     -->
 
     <record id="asset_frontend_custom" model="ir.asset">
@@ -34,6 +34,22 @@
         <field name="bundle">web.assets_frontend</field>
         <field name="directive">append</field>
         <field name="path">theme_warunglakku/static/src/js/theme.js</field>
+    </record>
+
+    <!--
+        AJAX Add-to-Cart on product detail page.
+        Intercepts #add_to_cart click on /shop/<slug>, POSTs to
+        /shop/cart/update_json, updates cart counter + shows toast.
+        Customer stays on product page (no redirect to /shop/cart).
+
+        Loaded AFTER theme.js so bootstrap.Toast is already available.
+        Fixed in v17.0.3.10.48.
+    -->
+    <record id="asset_frontend_ajax_add_to_cart_js" model="ir.asset">
+        <field name="name">Warung Lakku AJAX Add to Cart JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="directive">append</field>
+        <field name="path">theme_warunglakku/static/src/js/ajax_add_to_cart.js</field>
     </record>
 
 </odoo>
