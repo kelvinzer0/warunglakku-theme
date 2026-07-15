@@ -163,26 +163,41 @@ class Website(models.Model):
         }
 
     def get_warunglakku_shop_chips(self):
-        """Return recordset of product.public.category records under
-        the 'Warung Lakku' parent, sorted by name (case-insensitive).
-
-        Used by the Filter Chips / Pill Tabs widget on /shop.
-
-        v3.10.61 change: return ALL public categories under the
-        'Warung Lakku' parent (not just those linked to published
-        products). This ensures chips always render even before the
-        product→category sync script runs.
-
+        """Return list of dicts with category info + published product count.
+        
+        Only categories with at least 1 published product are included.
+        Each dict: {'id': int, 'name': str, 'published_count': int}
+        
         Returns:
-            recordset of product.public.category (empty if none).
+            list of dicts (empty if none).
         """
         PPC = self.env['product.public.category'].sudo()
+        PT = self.env['product.template'].sudo()
+        
         # Find the 'Warung Lakku' parent category
         parent = PPC.search([('name', '=', 'Warung Lakku')], limit=1)
         if not parent:
-            return PPC
-        # Return all children of 'Warung Lakku' parent
+            return []
+        
+        # Get all children of 'Warung Lakku' parent
         cats = PPC.search([('parent_id', '=', parent.id)])
         if not cats:
-            return PPC
-        return cats.sorted(lambda c: (c.name or '').lower())
+            return []
+        
+        # Build list with published product counts
+        result = []
+        for cat in cats:
+            published_count = PT.search_count([
+                ('is_published', '=', True),
+                ('public_categ_ids', 'in', cat.id),
+            ])
+            if published_count > 0:
+                result.append({
+                    'id': cat.id,
+                    'name': cat.name,
+                    'published_count': published_count,
+                })
+        
+        # Sort by name case-insensitively
+        result.sort(key=lambda c: (c['name'] or '').lower())
+        return result

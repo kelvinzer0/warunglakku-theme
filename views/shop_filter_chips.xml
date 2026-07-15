@@ -105,14 +105,12 @@
                                     <span>Semua</span>
                                 </a>
                                 <t t-foreach="wl_chip_cats" t-as="chip">
-                                    <a t-att-href="'/shop?category=%d' % chip.id"
-                                       t-att-class="'wl_chip' + (' wl_chip_active' if category and category.id == chip.id else '')"
+                                    <a t-att-href="'/shop?category=%d' % chip['id']"
+                                       t-att-class="'wl_chip' + (' wl_chip_active' if category and category.id == chip['id'] else '')"
                                        role="tab"
-                                       t-att-aria-selected="'true' if category and category.id == chip.id else 'false'">
-                                        <span t-field="chip.name"/>
-                                        <t t-if="chip.product_tmpl_ids">
-                                            <span class="wl_chip_count" t-esc="len(chip.product_tmpl_ids)"/>
-                                        </t>
+                                       t-att-aria-selected="'true' if category and category.id == chip['id'] else 'false'">
+                                        <span t-esc="chip['name']"/>
+                                        <span class="wl_chip_count" t-esc="chip['published_count']"/>
                                     </a>
                                 </t>
                             </div>
