@@ -35,20 +35,41 @@
 import publicWidget from "@web/legacy/js/public/public_widget";
 
 /*
- * Note: We use Odoo's legacy `ajax.jsonRpc` instead of `@web/core/network/rpc`
- * because the latter is NOT available in the `web.assets_frontend_lazy` bundle
- * (it's only in `web.assets_backend` or `web.assets_frontend_minimal`).
- * Using the wrong import causes the widget to fail loading with error:
- *   "The following modules are needed by other modules but have not been
- *    defined: ["@web/core/network/rpc"]"
+ * Note: We use native fetch() for the JSON-RPC call instead of Odoo's
+ * @web/core/network/rpc or legacy ajax.jsonRpc because:
+ *   - @web/core/network/rpc is NOT available in web.assets_frontend_lazy
+ *     bundle (only in web.assets_backend or web.assets_frontend_minimal).
+ *   - ajax global is also not defined in Odoo 17 frontend bundles.
  *
- * `ajax.jsonRpc` is available globally in the frontend bundle and works
- * the same way for our use case (JSON-RPC POST to /shop/cart/update_json).
+ * fetch() is universal, no dependencies, works in all modern browsers.
+ * The /shop/cart/update_json route is type='json' which expects a
+ * JSON-RPC 2.0 envelope: {jsonrpc:"2.0", method:"call", params:{...}, id:...}
  */
-// eslint-disable-next-line no-undef
-const jsonRpc = (route, method, params) =>
-    // eslint-disable-next-line no-undef
-    ajax.jsonRpc(route, method, params);
+async function jsonRpc(route, method, params) {
+    const body = JSON.stringify({
+        jsonrpc: "2.0",
+        method: method || "call",
+        params: params,
+        id: Date.now(),
+    });
+    const resp = await fetch(route, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+        },
+        body: body,
+        credentials: "same-origin",
+    });
+    if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+    }
+    const data = await resp.json();
+    if (data.error) {
+        throw new Error(data.error.message || JSON.stringify(data.error));
+    }
+    return data.result;
+}
 
 const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
     selector: "#wrapwrap",

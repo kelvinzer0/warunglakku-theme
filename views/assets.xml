@@ -8,7 +8,7 @@
         bypasses CDN/Cloudflare cache (otherwise stale CSS gets
         served for users without cache-buster query param).
 
-        Last touched: v3.10.53 (2026-07-15 05:45 UTC)
+        Last touched: v3.10.54 (2026-07-15 05:50 UTC)
     -->
 
     <record id="asset_frontend_custom" model="ir.asset">
@@ -49,7 +49,7 @@
         <field name="name">Warung Lakku AJAX Add to Cart JS</field>
         <field name="bundle">web.assets_frontend</field>
         <field name="directive">append</field>
-        <field name="path">theme_warunglakku/static/src/js/wl_ajax_cart.js</field>
+        <field name="path">theme_warunglakku/static/src/js/wl_atc.js</field>
     </record>
 
 </odoo>
