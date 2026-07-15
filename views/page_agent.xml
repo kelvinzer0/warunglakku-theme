@@ -22,27 +22,27 @@
 
                     function applyStyles() {
                         // Background: dark red gradient
-                        var bg = document.querySelector('[class*="_background_"]');
+                        var bg = document.querySelector('[class*="_background_1tu05_"]');
                         if (bg) {
                             bg.style.cssText += ';background:linear-gradient(135deg,rgba(90,8,14,0.97),rgba(122,12,20,0.97))!important;border-radius:12px!important;box-shadow:0 8px 32px rgba(90,8,14,0.3)!important;';
                         }
                         // History section
-                        var hist = document.querySelector('[class*="_historySectionWrapper_"]');
+                        var hist = document.querySelector('[class*="_historySectionWrapper_1tu05_"]');
                         if (hist) hist.style.cssText += ';background:rgba(90,8,14,0.85)!important;';
                         // Header
-                        var header = document.querySelector('[class*="_header_"]');
+                        var header = document.querySelector('[class*="_header_1tu05_"]');
                         if (header) header.style.cssText += ';background:rgba(90,8,14,0.6)!important;';
                         // Status text: gold
-                        var st = document.querySelector('[class*="_statusText_"]');
+                        var st = document.querySelector('[class*="_statusText_1tu05_"]');
                         if (st) st.style.cssText += ';color:#f5c400!important;font-weight:600!important;';
                         // Indicator: gold
-                        var ind = document.querySelector('[class*="_indicator_"]');
+                        var ind = document.querySelector('[class*="_indicator_1tu05_"]');
                         if (ind) ind.style.cssText += ';background:#f5c400!important;';
                         // Input section: cream
-                        var isw = document.querySelector('[class*="_inputSectionWrapper_"]');
+                        var isw = document.querySelector('[class*="_inputSectionWrapper_1tu05_"]');
                         if (isw) isw.style.cssText += ';background:rgba(253,251,245,0.95)!important;';
                         // Input field
-                        var input = document.querySelector('[class*="_taskInput_"]');
+                        var input = document.querySelector('[class*="_taskInput_1tu05_"]');
                         if (input) {
                             input.style.cssText += ';background:#fff!important;color:#1f1f1f!important;border:1px solid #ddd!important;border-radius:8px!important;font-size:13px!important;padding:8px 12px!important;font-family:Inter,-apple-system,sans-serif!important;';
                             // Fix placeholder
@@ -51,7 +51,7 @@
                             }
                         }
                         // Control buttons: gold tint
-                        document.querySelectorAll('[class*="_controlButton_"]').forEach(function(b) {
+                        document.querySelectorAll('[class*="_controlButton_1tu05_"]').forEach(function(b) {
                             if (!b.className.includes('_stopButton_')) {
                                 b.style.cssText += ';background:rgba(245,196,0,0.15)!important;color:#f5c400!important;border-radius:6px!important;';
                             }
@@ -60,12 +60,12 @@
 
                     function fixText() {
                         // Fix placeholder
-                        var input = document.querySelector('[class*="_taskInput_"]');
+                        var input = document.querySelector('[class*="_taskInput_1tu05_"]');
                         if (input && input.placeholder && /[\u4e00-\u9fff]/.test(input.placeholder)) {
                             input.placeholder = 'Tulis perintah... (contoh: pesan seblak)';
                         }
                         // Fix all Chinese text in agent widget
-                        var wrapper = document.querySelector('[class*="_wrapper_"]');
+                        var wrapper = document.querySelector('[class*="_wrapper_1tu05_"]');
                         if (!wrapper) return;
                         var walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT, null);
                         var node;
