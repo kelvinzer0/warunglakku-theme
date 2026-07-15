@@ -236,6 +236,22 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
                     'class="toast-container position-fixed top-0 end-0 p-3" ' +
                     'style="z-index: 1080;"></div>'
             ).appendTo("body");
+            // Inject minimal toast CSS once (in case Bootstrap CSS toast rules
+            // aren't loaded — frontend lazy bundle sometimes omits them).
+            if (!$("#wl-toast-css").length) {
+                $("<style id='wl-toast-css'>").html(
+                    ".toast{background:rgba(255,255,255,.95);border-radius:.375rem;" +
+                    "box-shadow:0 .5rem 1rem rgba(0,0,0,.15);max-width:350px;" +
+                    "opacity:0;transition:opacity .3s ease;overflow:hidden}" +
+                    ".toast.show{opacity:1}" +
+                    ".text-bg-success{background-color:#198754!important;color:#fff!important}" +
+                    ".text-bg-danger{background-color:#dc3545!important;color:#fff!important}" +
+                    ".text-bg-info{background-color:#0dcaf0!important;color:#000!important}" +
+                    ".toast-body{padding:.75rem 1rem;font-size:.95rem}" +
+                    ".btn-close{filter:invert(1) grayscale(100%) brightness(200%);" +
+                    "background:transparent;border:0;padding:.5rem;cursor:pointer}"
+                ).appendTo("head");
+            }
         }
 
         const $toast = $(
@@ -256,12 +272,30 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
                 "</div>"
         ).appendTo($container);
 
+        // Try Bootstrap 5 Toast API first; fall back to manual show+autohide
+        // if bootstrap global is not available (frontend lazy bundle doesn't
+        // always expose it).
         // eslint-disable-next-line no-undef
-        const bsToast = new bootstrap.Toast($toast[0], {
-            delay: 3500,
-            autohide: true,
-        });
-        bsToast.show();
+        if (typeof bootstrap !== "undefined" && bootstrap.Toast) {
+            // eslint-disable-next-line no-undef
+            const bsToast = new bootstrap.Toast($toast[0], {
+                delay: 3500,
+                autohide: true,
+            });
+            bsToast.show();
+        } else {
+            // Manual fallback: show + autohide after 3.5s
+            $toast.addClass("show");
+            setTimeout(() => {
+                $toast.removeClass("show");
+                setTimeout(() => $toast.remove(), 300);
+            }, 3500);
+            // Manual close button
+            $toast.find(".btn-close").on("click", function () {
+                $toast.removeClass("show");
+                setTimeout(() => $toast.remove(), 300);
+            });
+        }
 
         $toast.on("hidden.bs.toast", function () {
             $(this).remove();
