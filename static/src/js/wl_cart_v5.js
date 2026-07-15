@@ -54,11 +54,13 @@ const WL_CART_SUBMIT = publicWidget.Widget.extend({
      * Intercept form submit. Send AJAX instead of synchronous POST.
      */
     _onFormSubmit: function (ev) {
-        // Only intercept on /shop and /shop/<slug> pages
+        // Intercept on: homepage, /shop listing, /shop/<slug> detail
+        // (NOT /shop/cart, /shop/checkout, /shop/payment — let those submit normally)
         const path = window.location.pathname;
+        const isHomepage = path === "/" || path === "";
         const isShopListing = path === "/shop" || path.startsWith("/shop?");
         const isProductDetail = /^\/shop\/[^/]+$/.test(path);
-        if (!isShopListing && !isProductDetail) {
+        if (!isHomepage && !isShopListing && !isProductDetail) {
             return; // Let Odoo's default behavior (e.g. on /shop/cart)
         }
 
