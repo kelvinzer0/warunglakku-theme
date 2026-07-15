@@ -8,7 +8,7 @@
         bypasses CDN/Cloudflare cache (otherwise stale CSS gets
         served for users without cache-buster query param).
 
-        Last touched: v3.10.49 (2026-07-15 04:55 UTC)
+        Last touched: v3.10.50 (2026-07-15 05:00 UTC)
     -->
 
     <record id="asset_frontend_custom" model="ir.asset">
