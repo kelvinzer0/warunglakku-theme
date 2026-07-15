@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="wl_page_agent" name="WL: Page Agent AI"
+              inherit_id="website.layout" priority="99">
+        <xpath expr="//body" position="inside">
+            <!-- Page Agent: AI GUI Agent for Warung Lakku -->
+            <script src="https://cdn.jsdelivr.net/npm/page-agent@1.12.1/dist/iife/page-agent.demo.js"
+                    crossorigin="anonymous"></script>
+            <script>
+                (function() {
+                    // Override language to Indonesian after demo auto-init
+                    var checkInterval = setInterval(function() {
+                        if (window.PageAgent &amp;&amp; window.PageAgent.instance) {
+                            clearInterval(checkInterval);
+                            try {
+                                window.PageAgent.instance.setLanguage('id-ID');
+                                console.log('[Page Agent] Language set to Indonesian (id-ID)');
+                            } catch(e) {
+                                console.log('[Page Agent] Language override pending:', e.message);
+                            }
+                        }
+                    }, 500);
+                    // Stop checking after 10 seconds
+                    setTimeout(function() { clearInterval(checkInterval); }, 10000);
+                })();
+            </script>
+        </xpath>
+    </template>
+</odoo>
