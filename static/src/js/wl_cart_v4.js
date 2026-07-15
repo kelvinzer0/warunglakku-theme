@@ -211,10 +211,14 @@ const WL_CART_SUBMIT = publicWidget.Widget.extend({
     _showToast: function (message, type) {
         type = type || "success";
 
-        // Use Odoo's native notification container if it exists,
-        // otherwise create our own with same class name.
-        let $container = $(".o_notification_manager").first();
+        // Use Odoo's native notification container.
+        // There are 2 .o_notification_manager divs in Odoo 17:
+        //   1. .o_notification_manager.o_upload_progress_toast (for file uploads)
+        //   2. .o_notification_manager (for cart/order notifications ← this one)
+        // Target the second one to match where Odoo puts native toasts.
+        let $container = $(".o_notification_manager").not(".o_upload_progress_toast").first();
         if (!$container.length) {
+            // Fallback: create container matching Odoo's structure
             $container = $(
                 '<div class="o_notification_manager position-fixed top-0 end-0 p-3" ' +
                     'style="z-index: 1080; width: 350px;"></div>'
