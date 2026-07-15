@@ -33,7 +33,22 @@
  */
 
 import publicWidget from "@web/legacy/js/public/public_widget";
-import { jsonRpc } from "@web/core/network/rpc";
+
+/*
+ * Note: We use Odoo's legacy `ajax.jsonRpc` instead of `@web/core/network/rpc`
+ * because the latter is NOT available in the `web.assets_frontend_lazy` bundle
+ * (it's only in `web.assets_backend` or `web.assets_frontend_minimal`).
+ * Using the wrong import causes the widget to fail loading with error:
+ *   "The following modules are needed by other modules but have not been
+ *    defined: ["@web/core/network/rpc"]"
+ *
+ * `ajax.jsonRpc` is available globally in the frontend bundle and works
+ * the same way for our use case (JSON-RPC POST to /shop/cart/update_json).
+ */
+// eslint-disable-next-line no-undef
+const jsonRpc = (route, method, params) =>
+    // eslint-disable-next-line no-undef
+    ajax.jsonRpc(route, method, params);
 
 const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
     selector: "#wrapwrap",
