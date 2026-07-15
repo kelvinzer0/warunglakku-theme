@@ -163,30 +163,26 @@ class Website(models.Model):
         }
 
     def get_warunglakku_shop_chips(self):
-        """Return recordset of product.public.category records that are
-        linked to at least one published product, sorted by name
-        (case-insensitive).
+        """Return recordset of product.public.category records under
+        the 'Warung Lakku' parent, sorted by name (case-insensitive).
 
-        Used by the Filter Chips / Pill Tabs widget on /shop. The chips
-        render as a horizontal-scrollable list of pill-shaped links.
+        Used by the Filter Chips / Pill Tabs widget on /shop.
 
-        Background:
-        - The n8n workflow syncs WA collections → product.category
-          (internal category, parent_id=7 "Warung Lakku").
-        - /shop filters by product.public.category via ?category=<id> or
-          /shop/category/<slug>-<id>.
-        - The one-time sync script sync_public_categories.py creates
-          matching product.public.category records and links them to
-          published products via public_categ_ids.
-        - This method returns the "visible" public cats that should
-          appear as chips (those with at least 1 published product).
+        v3.10.61 change: return ALL public categories under the
+        'Warung Lakku' parent (not just those linked to published
+        products). This ensures chips always render even before the
+        product→category sync script runs.
 
         Returns:
             recordset of product.public.category (empty if none).
         """
-        PT = self.env['product.template'].sudo()
-        pub_recs = PT.search([('is_published', '=', True)]).mapped('public_categ_ids')
-        if not pub_recs:
-            return self.env['product.public.category'].sudo()
-        # Sort by name case-insensitively for stable ordering
-        return pub_recs.sorted(lambda c: (c.name or '').lower())
+        PPC = self.env['product.public.category'].sudo()
+        # Find the 'Warung Lakku' parent category
+        parent = PPC.search([('name', '=', 'Warung Lakku')], limit=1)
+        if not parent:
+            return PPC
+        # Return all children of 'Warung Lakku' parent
+        cats = PPC.search([('parent_id', '=', parent.id)])
+        if not cats:
+            return PPC
+        return cats.sorted(lambda c: (c.name or '').lower())
