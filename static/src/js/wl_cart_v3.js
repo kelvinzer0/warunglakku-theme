@@ -194,72 +194,83 @@ const WL_CART_SUBMIT = publicWidget.Widget.extend({
     },
 
     /**
-     * Show toast notification at top-right.
-     * Uses manual show/hide (no Bootstrap JS dependency).
+     * Show toast notification matching Odoo's native design system.
+     * Mirrors o_notification_fade structure + CSS from website_sale
+     * add_to_cart_notification.js so our toast looks consistent with
+     * the native one shown on product detail page.
+     *
+     * Spec (from Odoo 17 native toast via agent-browser audit):
+     *   - Container: .o_notification_manager (position-fixed, top-right)
+     *   - Toast: white bg, border 1px solid rgba(0,0,0,.1), radius 6.4px,
+     *            shadow 0 4px 16px rgba(0,0,0,.12), width 350px
+     *   - Header: bg rgba(255,255,255,.85), border-bottom, padding 8px 12px
+     *   - Body: bg rgba(255,255,255,.93), padding 12px
+     *   - Font: Inter, -apple-system, sans-serif
+     *   - CTA button: btn btn-primary w-100
      */
     _showToast: function (message, type) {
         type = type || "success";
-        const icon =
-            type === "success"
-                ? "fa-check-circle"
-                : type === "danger"
-                ? "fa-exclamation-circle"
-                : "fa-info-circle";
 
-        let $container = $("#wl-toast-container");
+        // Use Odoo's native notification container if it exists,
+        // otherwise create our own with same class name.
+        let $container = $(".o_notification_manager").first();
         if (!$container.length) {
             $container = $(
-                '<div id="wl-toast-container" ' +
-                    'class="toast-container position-fixed top-0 end-0 p-3" ' +
-                    'style="z-index: 1080;"></div>'
+                '<div class="o_notification_manager position-fixed top-0 end-0 p-3" ' +
+                    'style="z-index: 1080; width: 350px;"></div>'
             ).appendTo("body");
-            // Inject minimal toast CSS once (Bootstrap CSS toast rules may
-            // not be in the frontend lazy bundle).
-            if (!$("#wl-toast-css").length) {
-                $("<style id='wl-toast-css'>").html(
-                    ".toast{background:rgba(255,255,255,.95);border-radius:.375rem;" +
-                    "box-shadow:0 .5rem 1rem rgba(0,0,0,.15);max-width:350px;" +
-                    "opacity:0;transition:opacity .3s ease;overflow:hidden}" +
-                    ".toast.show{opacity:1}" +
-                    ".text-bg-success{background-color:#198754!important;color:#fff!important}" +
-                    ".text-bg-danger{background-color:#dc3545!important;color:#fff!important}" +
-                    ".text-bg-info{background-color:#0dcaf0!important;color:#000!important}" +
-                    ".toast-body{padding:.75rem 1rem;font-size:.95rem}" +
-                    ".btn-close{filter:invert(1) grayscale(100%) brightness(200%);" +
-                    "background:transparent;border:0;padding:.5rem;cursor:pointer}"
-                ).appendTo("head");
-            }
         }
 
+        // Color scheme by type (matching Odoo's o_cc1/o_cc2 etc.)
+        const colorMap = {
+            success: { bg: "#ffffff", border: "rgba(0,0,0,.1)", icon: "fa-check-circle", iconColor: "#198754" },
+            danger: { bg: "#ffffff", border: "rgba(220,53,69,.3)", icon: "fa-exclamation-circle", iconColor: "#dc3545" },
+            info: { bg: "#ffffff", border: "rgba(13,202,240,.3)", icon: "fa-info-circle", iconColor: "#0dcaf0" },
+        };
+        const c = colorMap[type] || colorMap.success;
+
+        // Build toast HTML matching Odoo native structure
         const $toast = $(
-            '<div class="toast align-items-center text-bg-' +
-                type +
-                ' border-0" role="alert" ' +
-                'aria-live="assertive" aria-atomic="true">' +
-                '<div class="d-flex">' +
-                '<div class="toast-body">' +
-                '<i class="fa ' +
-                icon +
-                ' me-2"></i>' +
-                message +
+            '<div role="alert" aria-live="assertive" aria-atomic="true" ' +
+                'class="toast o_cc1 position-relative start-0 mt-2 o_notification_fade" ' +
+                'style="background-color: ' + c.bg + "; " +
+                "border: 1px solid " + c.border + "; " +
+                "border-radius: 6.4px; " +
+                "box-shadow: 0 4px 16px rgba(0,0,0,.12); " +
+                "max-width: 350px; width: 100%; " +
+                'font-family: Inter, -apple-system, sans-serif;">' +
+                '<div class="toast-header justify-content-between" ' +
+                'style="background-color: rgba(255,255,255,.85); ' +
+                "border-bottom: 1px solid rgba(0,0,0,.05); " +
+                'padding: 8px 12px;">' +
+                "<strong style=\"font-size: .9rem; color: #212529;\">" +
+                '<i class="fa ' + c.icon + ' me-2" style="color: ' + c.iconColor + ';"></i>' +
+                "Warung Lakku</strong>" +
+                '<button type="button" class="btn-close" aria-label="Tutup" ' +
+                'style="filter: none; opacity: .5;"></button>' +
                 "</div>" +
-                '<button type="button" class="btn-close btn-close-white me-2 m-auto" ' +
-                'aria-label="Close"></button>' +
+                '<div class="toast-body" style="padding: 12px; color: #212529;">' +
+                "<div>" + message + "</div>" +
+                '<a role="button" class="w-100 btn btn-primary mt-2" href="/shop/cart" ' +
+                'style="border-radius: 4px;"> Lihat keranjang </a>' +
                 "</div>" +
                 "</div>"
         ).appendTo($container);
 
         // Manual show + autohide (no Bootstrap JS dependency)
-        $toast.addClass("show");
+        // Match Odoo's fade-in animation
+        $toast.addClass("show o_notification_fade-enter-active");
         const hideTimer = setTimeout(() => {
             $toast.removeClass("show");
+            $toast.addClass("o_notification_fade-leave-active");
             setTimeout(() => $toast.remove(), 300);
-        }, 3500);
+        }, 4000);
 
         // Manual close button
         $toast.find(".btn-close").on("click", function () {
             clearTimeout(hideTimer);
             $toast.removeClass("show");
+            $toast.addClass("o_notification_fade-leave-active");
             setTimeout(() => $toast.remove(), 300);
         });
     },
