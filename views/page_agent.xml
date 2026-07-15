@@ -3,116 +3,12 @@
     <template id="wl_page_agent" name="WL: Page Agent AI"
               inherit_id="website.layout" priority="99">
         <xpath expr="//body" position="inside">
-            <!--
-                Page Agent: AI GUI Agent for Warung Lakku
-                ==========================================
-                Alibaba Page Agent v1.12.1 — demo mode (free testing LLM).
-                Styled to match Warung Lakku design system.
-                Chinese text replaced with Indonesian.
-                Chat history persisted in sessionStorage across page reloads.
-            -->
             <script src="https://cdn.jsdelivr.net/npm/page-agent@1.12.1/dist/iife/page-agent.demo.js"
                     crossorigin="anonymous"></script>
-            <style>
-                /* === Page Agent: Warung Lakku Design System Override === */
-                /* Target CSS module classes via [class*="_name_"] selectors */
-
-                /* Main wrapper: dark red gradient instead of dark blue */
-                [class*="_wrapper_"] {
-                    font-family: Inter, -apple-system, sans-serif !important;
-                }
-                [class*="_background_"] {
-                    background: linear-gradient(135deg, rgba(90,8,14,0.97) 0%, rgba(122,12,20,0.97) 100%) !important;
-                    border-radius: 12px !important;
-                    box-shadow: 0 8px 32px rgba(90,8,14,0.3) !important;
-                }
-
-                /* History section: slightly lighter red */
-                [class*="_historySectionWrapper_"] {
-                    background: rgba(90,8,14,0.85) !important;
-                    border-radius: 12px 12px 0 0 !important;
-                }
-
-                /* Header bar */
-                [class*="_header_"] {
-                    background: rgba(90,8,14,0.6) !important;
-                    border-radius: 10px !important;
-                }
-
-                /* Status text: gold accent */
-                [class*="_statusText_"] {
-                    color: #f5c400 !important;
-                    font-weight: 600 !important;
-                }
-
-                /* Status indicator: gold instead of blue */
-                [class*="_indicator_"] {
-                    background: #f5c400 !important;
-                }
-
-                /* History items: subtle white on dark */
-                [class*="_historyItem_"] {
-                    color: rgba(255,255,255,0.9) !important;
-                }
-                [class*="_historyContent_"] {
-                    color: rgba(255,255,255,0.85) !important;
-                }
-
-                /* Control buttons */
-                [class*="_controlButton_"] {
-                    background: rgba(245,196,0,0.15) !important;
-                    color: #f5c400 !important;
-                    border-radius: 6px !important;
-                }
-                [class*="_controlButton_"]:hover {
-                    background: rgba(245,196,0,0.3) !important;
-                }
-                [class*="_stopButton_"] {
-                    background: rgba(239,68,68,0.2) !important;
-                    color: #ef4444 !important;
-                }
-
-                /* Input section: cream background */
-                [class*="_inputSectionWrapper_"] {
-                    background: rgba(253,251,245,0.95) !important;
-                    border-radius: 0 0 12px 12px !important;
-                }
-
-                /* Input field: white with red focus */
-                [class*="_taskInput_"] {
-                    background: #fff !important;
-                    color: #1f1f1f !important;
-                    border: 1px solid #ddd !important;
-                    border-radius: 8px !important;
-                    font-size: 13px !important;
-                    padding: 8px 12px !important;
-                }
-                [class*="_taskInput_"]:focus {
-                    border-color: #5a080e !important;
-                    outline: none !important;
-                    box-shadow: 0 0 0 2px rgba(90,8,14,0.1) !important;
-                }
-                [class*="_taskInput_"]::placeholder {
-                    color: #999 !important;
-                }
-
-                /* Trigger/FAB button: gold circle */
-                [class*="_trigger_"],
-                [class*="_fab_"] {
-                    background: #f5c400 !important;
-                    color: #5a080e !important;
-                    border-radius: 50% !important;
-                    box-shadow: 0 4px 16px rgba(245,196,0,0.4) !important;
-                }
-            </style>
             <script>
                 (function() {
                     var STORAGE_KEY = 'wl_page_agent_history';
-                    var LANG_SET = false;
-                    var TEXT_FIXED = false;
-                    var HISTORY_RESTORED = false;
 
-                    // Chinese → Indonesian text replacements
                     var TEXT_MAP = {
                         '输入新任务，详细描述步骤，回车提交': 'Tulis perintah... (contoh: pesan seblak)',
                         '准备就绪': 'Siap',
@@ -124,124 +20,122 @@
                         '出现错误': 'Terjadi kesalahan',
                     };
 
-                    function fixText() {
-                        if (TEXT_FIXED) return;
-                        // Fix placeholder
+                    function applyStyles() {
+                        // Background: dark red gradient
+                        var bg = document.querySelector('[class*="_background_"]');
+                        if (bg) {
+                            bg.style.cssText += ';background:linear-gradient(135deg,rgba(90,8,14,0.97),rgba(122,12,20,0.97))!important;border-radius:12px!important;box-shadow:0 8px 32px rgba(90,8,14,0.3)!important;';
+                        }
+                        // History section
+                        var hist = document.querySelector('[class*="_historySectionWrapper_"]');
+                        if (hist) hist.style.cssText += ';background:rgba(90,8,14,0.85)!important;';
+                        // Header
+                        var header = document.querySelector('[class*="_header_"]');
+                        if (header) header.style.cssText += ';background:rgba(90,8,14,0.6)!important;';
+                        // Status text: gold
+                        var st = document.querySelector('[class*="_statusText_"]');
+                        if (st) st.style.cssText += ';color:#f5c400!important;font-weight:600!important;';
+                        // Indicator: gold
+                        var ind = document.querySelector('[class*="_indicator_"]');
+                        if (ind) ind.style.cssText += ';background:#f5c400!important;';
+                        // Input section: cream
+                        var isw = document.querySelector('[class*="_inputSectionWrapper_"]');
+                        if (isw) isw.style.cssText += ';background:rgba(253,251,245,0.95)!important;';
+                        // Input field
                         var input = document.querySelector('[class*="_taskInput_"]');
                         if (input) {
-                            for (var cn in TEXT_MAP) {
-                                if (input.placeholder === cn || input.getAttribute('placeholder') === cn) {
-                                    input.placeholder = TEXT_MAP[cn];
-                                }
-                            }
-                            // Force Indonesian placeholder regardless
+                            input.style.cssText += ';background:#fff!important;color:#1f1f1f!important;border:1px solid #ddd!important;border-radius:8px!important;font-size:13px!important;padding:8px 12px!important;font-family:Inter,-apple-system,sans-serif!important;';
+                            // Fix placeholder
                             if (input.placeholder && /[\u4e00-\u9fff]/.test(input.placeholder)) {
                                 input.placeholder = 'Tulis perintah... (contoh: pesan seblak)';
                             }
                         }
+                        // Control buttons: gold tint
+                        document.querySelectorAll('[class*="_controlButton_"]').forEach(function(b) {
+                            if (!b.className.includes('_stopButton_')) {
+                                b.style.cssText += ';background:rgba(245,196,0,0.15)!important;color:#f5c400!important;border-radius:6px!important;';
+                            }
+                        });
+                    }
 
-                        // Fix all text nodes in agent widget
+                    function fixText() {
+                        // Fix placeholder
+                        var input = document.querySelector('[class*="_taskInput_"]');
+                        if (input && input.placeholder && /[\u4e00-\u9fff]/.test(input.placeholder)) {
+                            input.placeholder = 'Tulis perintah... (contoh: pesan seblak)';
+                        }
+                        // Fix all Chinese text in agent widget
                         var wrapper = document.querySelector('[class*="_wrapper_"]');
-                        if (wrapper) {
-                            var walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT, null);
-                            var node;
-                            while (node = walker.nextNode()) {
-                                var t = node.textContent.trim();
-                                for (var cn in TEXT_MAP) {
-                                    if (t === cn || t.includes(cn)) {
-                                        node.textContent = node.textContent.replace(cn, TEXT_MAP[cn]);
-                                    }
+                        if (!wrapper) return;
+                        var walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT, null);
+                        var node;
+                        while (node = walker.nextNode()) {
+                            var t = node.textContent;
+                            for (var cn in TEXT_MAP) {
+                                if (t.indexOf(cn) >= 0) {
+                                    node.textContent = t.replace(new RegExp(cn, 'g'), TEXT_MAP[cn]);
+                                    t = node.textContent;
                                 }
                             }
+                            // Regex fallback: replace any remaining CJK chars
+                            if (/[\u4e00-\u9fff]/.test(t)) {
+                                node.textContent = t.replace(/[\u4e00-\u9fff]+[，。…？！]/g, '');
+                            }
                         }
-                        TEXT_FIXED = true;
                     }
 
                     function setupAgent() {
                         var pa = window.pageAgent;
                         if (!pa || pa.disposed) return false;
-
-                        // 1. Set language to Indonesian
-                        if (!LANG_SET) {
-                            try {
-                                pa.config.language = 'id-ID';
-                                if (pa.config.pageController && pa.config.pageController.config) {
-                                    pa.config.pageController.config.language = 'id-ID';
-                                }
-                                LANG_SET = true;
-                                console.log('[Page Agent] Language: id-ID');
-                            } catch(e) {}
-                        }
-
-                        // 2. Fix Chinese text → Indonesian
-                        fixText();
-
-                        // 3. Restore chat history
-                        if (!HISTORY_RESTORED) {
-                            try {
-                                var saved = sessionStorage.getItem(STORAGE_KEY);
-                                if (saved) {
-                                    var history = JSON.parse(saved);
-                                    if (Array.isArray(history) && history.length > 0) {
-                                        pa.history = history;
-                                        console.log('[Page Agent] Restored ' + history.length + ' messages');
-                                    }
-                                }
-                            } catch(e) {}
-                            HISTORY_RESTORED = true;
-                        }
-
-                        // 4. Save on new messages
+                        try {
+                            pa.config.language = 'id-ID';
+                            if (pa.config.pageController && pa.config.pageController.config) {
+                                pa.config.pageController.config.language = 'id-ID';
+                            }
+                        } catch(e) {}
+                        // Restore history
+                        try {
+                            var saved = sessionStorage.getItem(STORAGE_KEY);
+                            if (saved) {
+                                var h = JSON.parse(saved);
+                                if (Array.isArray(h) && h.length > 0) pa.history = h;
+                            }
+                        } catch(e) {}
+                        // Save on message
                         try {
                             pa.addEventListener('message', function() {
-                                try {
-                                    if (pa.history && pa.history.length > 0) {
-                                        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history));
-                                    }
-                                } catch(e) {}
+                                try { if (pa.history && pa.history.length > 0) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history)); } catch(e) {}
                             });
                         } catch(e) {}
-
-                        // 5. Save before page unload
                         window.addEventListener('beforeunload', function() {
-                            try {
-                                if (pa.history && pa.history.length > 0) {
-                                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history));
-                                }
-                            } catch(e) {}
+                            try { if (pa.history && pa.history.length > 0) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history)); } catch(e) {}
                         });
-
                         return true;
                     }
 
-                    // Wait for pageAgent to initialize
+                    // Main loop: apply styles + fix text until agent is stable
                     var attempts = 0;
-                    var checkInterval = setInterval(function() {
+                    var interval = setInterval(function() {
                         attempts++;
-                        if (window.pageAgent) {
-                            if (setupAgent()) {
-                                clearInterval(checkInterval);
-                                // Re-fix text after a delay (agent UI may re-render)
-                                setTimeout(fixText, 1000);
-                                setTimeout(fixText, 3000);
-                                console.log('[Page Agent] Warung Lakku AI ready (Indonesian, styled, persisted)');
-                            }
-                        }
-                        // Also fix text on every check (UI may render late)
+                        applyStyles();
                         fixText();
-                        if (attempts > 30) {
-                            clearInterval(checkInterval);
+                        if (window.pageAgent && !window.pageAgent.disposed) {
+                            setupAgent();
+                        }
+                        if (attempts >= 60) { // 30 seconds
+                            clearInterval(interval);
+                            console.log('[Page Agent] Warung Lakku AI ready (styled, Indonesian, persisted)');
                         }
                     }, 500);
 
-                    // MutationObserver: fix text when agent UI re-renders
+                    // MutationObserver: re-apply on DOM changes
                     var observer = new MutationObserver(function() {
+                        applyStyles();
                         fixText();
                     });
                     if (document.body) {
                         observer.observe(document.body, { childList: true, subtree: true, characterData: true });
                     }
-                    // Stop observing after 30 seconds
                     setTimeout(function() { observer.disconnect(); }, 30000);
                 })();
             </script>
