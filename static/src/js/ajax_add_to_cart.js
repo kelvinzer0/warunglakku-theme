@@ -1,90 +1,124 @@
 /** @odoo-module **/
 
 /*
- * Warung Lakku - AJAX Add to Cart on Product Detail Page
- * ========================================================
+ * Warung Lakku - AJAX Add to Cart (Product Detail + Listing)
+ * =================================================================
  *
- * When customer clicks "Tambahkan ke keranjang" on a product detail page
- * (URL pattern: /shop/<slug>), intercept the click and POST to
- * /shop/cart/update_json via JSON-RPC instead of submitting the form
- * synchronously (which would redirect to /shop/cart).
+ * Intercepts Add-to-Cart click on both:
+ *   1. Product detail page (/shop/<slug>) — selector: #add_to_cart
+ *   2. Product listing page (/shop) — selector: .wl_card_add_to_cart_btn
  *
- * After AJAX success:
- *   1. Update cart counter in navbar (.my_cart_quantity)
- *   2. Show toast notification "Berhasil ditambahkan ke keranjang"
- *   3. Customer stays on the product page (no redirect)
- *
- * On product card grid (/shop listing), the existing Odoo behavior is
- * preserved (form submits → redirect to /shop/cart). This is intentional
- * because the product card "Add to Cart" buttons already use a different
- * code path (a-submit on #products_grid).
+ * Both POST to /shop/cart/update_json (JSON-RPC) instead of submitting
+ * the form synchronously. After AJAX success:
+ *   1. Update cart counter in navbar (.my_cart_quantity) with pulse
+ *   2. Show Bootstrap 5 toast "Berhasil ditambahkan ke keranjang"
+ *   3. Customer stays on the same page (no redirect to /shop/cart)
  *
  * Route: /shop/cart/update_json
- *   - Type: json (JSON-RPC, no CSRF required since type='json')
+ *   - Type: json (JSON-RPC, csrf=False)
  *   - Args: product_id (int), add_qty (int), display (bool)
  *   - Returns: { line_id, cart_quantity, minor_amount, notification_info }
  *
  * Author: Kelvin Yuli Andrian
- * Since: v17.0.3.10.48
+ * Since: v17.0.3.10.48 (detail page only)
+ * Updated: v17.0.3.10.49 (added listing page support)
  */
 
 import publicWidget from "@web/legacy/js/public/public_widget";
 import { jsonRpc } from "@web/core/network/rpc";
 
 const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
-    selector: "#add_to_cart_wrap",
+    selector: "body",
     events: {
-        "click #add_to_cart": "_onAddToCartClick",
+        "click #add_to_cart": "_onAddToCartClickDetail",
+        "click .wl_card_add_to_cart_btn": "_onAddToCartClickListing",
     },
 
-    /**
-     * Intercept #add_to_cart click on product detail page only.
-     * On /shop (listing) or other contexts, let default Odoo behavior run.
-     */
-    _onAddToCartClick: function (ev) {
-        // Only intercept on product detail page
-        // Pattern: /shop/<slug> (e.g. /shop/wa-12345-kerupuk-1)
-        // NOT /shop (listing), /shop/cart, /shop/checkout, /shop/payment
+    // ============================================================
+    // PRODUCT DETAIL PAGE (/shop/<slug>)
+    // ============================================================
+    _onAddToCartClickDetail: function (ev) {
         const path = window.location.pathname;
+        // Only intercept on product detail page (NOT /shop, /shop/cart, etc.)
         if (!/^\/shop\/[^/]+$/.test(path)) {
-            return; // Let Odoo's default handler proceed
+            return;
         }
 
         ev.preventDefault();
         ev.stopImmediatePropagation();
 
-        const $btn = this.$("#add_to_cart");
+        const $btn = $(ev.currentTarget);
         const $form = $btn.closest("form");
         const productId = parseInt($form.find('input[name="product_id"]').val(), 10);
         const addQty = parseInt($form.find('input[name="add_qty"]').val(), 10) || 1;
 
+        this._addToCart($btn, productId, addQty);
+    },
+
+    // ============================================================
+    // PRODUCT LISTING PAGE (/shop)
+    // ============================================================
+    _onAddToCartClickListing: function (ev) {
+        // Only intercept on /shop listing page (NOT on detail, cart, etc.)
+        const path = window.location.pathname;
+        if (path !== "/shop" && !path.startsWith("/shop?")) {
+            return;
+        }
+
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+
+        const $btn = $(ev.currentTarget);
+        const $form = $btn.closest("form");
+        // On listing, product_id is injected by theme's shop_add_to_cart.xml
+        // via <input type="hidden" name="product_id" t-att-value="product.product_variant_id.id"/>
+        const productId = parseInt($form.find('input[name="product_id"]').val(), 10);
+
+        // Listing always adds 1 (no qty input on cards)
+        this._addToCart($btn, productId, 1);
+    },
+
+    // ============================================================
+    // COMMON: call /shop/cart/update_json
+    // ============================================================
+    _addToCart: function ($btn, productId, addQty) {
         if (!productId || productId < 1) {
             this._showToast("Produk tidak valid", "danger");
             return;
         }
 
-        // Show loading state
         const originalHtml = $btn.html();
-        $btn.html('<i class="fa fa-spinner fa-spin me-2"></i>Menambahkan...')
-            .addClass("disabled")
-            .css("pointer-events", "none");
+        const isListing = $btn.hasClass("wl_card_add_to_cart_btn");
+
+        // Loading state (different style for listing button)
+        if (isListing) {
+            $btn.html('<i class="fa fa-spinner fa-spin"></i>')
+                .addClass("disabled")
+                .css("pointer-events", "none");
+        } else {
+            $btn.html('<i class="fa fa-spinner fa-spin me-2"></i>Menambahkan...')
+                .addClass("disabled")
+                .css("pointer-events", "none");
+        }
 
         jsonRpc("/shop/cart/update_json", "call", {
             product_id: productId,
             add_qty: addQty,
             display: false,
         }).then((data) => {
-            // Update cart counter in navbar
             this._updateCartCounter(data, addQty);
 
-            // Show success toast
             this._showToast(
                 `Berhasil ditambahkan ke keranjang (${addQty}x)`,
                 "success"
             );
 
-            // Optional: brief check icon before restoring
-            $btn.html('<i class="fa fa-check me-2"></i>Ditambahkan!');
+            // Brief success state
+            if (isListing) {
+                $btn.html('<i class="fa fa-check"></i>');
+            } else {
+                $btn.html('<i class="fa fa-check me-2"></i>Ditambahkan!');
+            }
             setTimeout(() => {
                 $btn.html(originalHtml)
                     .removeClass("disabled")
@@ -105,14 +139,12 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
 
     /**
      * Update the cart quantity counter in the navbar.
-     * Odoo's update_json returns cart_quantity when cart is non-empty.
-     * On the very first add (cart was empty), it returns {} — fallback to
-     * incrementing the current counter.
+     * On the very first add (cart was empty), endpoint returns {} —
+     * fallback to incrementing the current counter.
      */
     _updateCartCounter: function (data, addedQty) {
         const $counter = $(".my_cart_quantity");
         if (!data || data.cart_quantity === undefined) {
-            // Cart was empty before, this is the first add
             const current = parseInt($counter.text(), 10) || 0;
             $counter.text(current + addedQty);
         } else {
@@ -132,7 +164,6 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
 
     /**
      * Show a Bootstrap 5 toast notification at top-right of viewport.
-     * Creates the toast container if it doesn't exist yet.
      */
     _showToast: function (message, type) {
         type = type || "success";
@@ -143,7 +174,6 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
                 ? "fa-exclamation-circle"
                 : "fa-info-circle";
 
-        // Ensure container exists
         let $container = $("#wl-toast-container");
         if (!$container.length) {
             $container = $(
@@ -153,7 +183,6 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
             ).appendTo("body");
         }
 
-        // Create toast element (Bootstrap 5)
         const $toast = $(
             '<div class="toast align-items-center text-bg-' +
                 type +
@@ -172,7 +201,6 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
                 "</div>"
         ).appendTo($container);
 
-        // Initialize and show via Bootstrap 5 Toast API
         // eslint-disable-next-line no-undef
         const bsToast = new bootstrap.Toast($toast[0], {
             delay: 3500,
@@ -180,7 +208,6 @@ const WL_AJAX_ADD_TO_CART = publicWidget.Widget.extend({
         });
         bsToast.show();
 
-        // Remove from DOM after hidden
         $toast.on("hidden.bs.toast", function () {
             $(this).remove();
         });
