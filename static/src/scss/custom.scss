@@ -3518,3 +3518,117 @@ header.o_header .navbar-brand.logo,
         align-items: center !important;
     }
 }
+
+// ============================================================
+// TOPING BADGE — Seblak products priced < 5000
+// ============================================================
+// Shows a pill-shaped "Toping" badge on:
+//   1. Product card in /shop grid (.wl_toping_badge_list)
+//   2. Product detail image carousel (.wl_toping_badge_detail)
+//
+// Conditions (handled in XML t-if):
+//   - Product belongs to public category Seblak (id=6)
+//   - Product.list_price < 5000
+//
+// Style: yellow gradient (WL brand), maroon border + text,
+// pill shape with shadow, mobile-responsive sizing.
+// ============================================================
+.wl_toping_badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #f5c400 0%, #ffd84d 100%);
+    color: #5a080e;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    line-height: 1;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: 1.5px solid #5a080e;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(90, 8, 14, 0.25);
+    pointer-events: none;
+    white-space: nowrap;
+
+    i {
+        font-size: 0.75rem;
+        line-height: 1;
+    }
+}
+
+// --- Product card (list view) ---
+.wl_toping_badge_list {
+    top: 6px;
+    left: 6px;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+
+    i {
+        font-size: 0.7rem;
+    }
+}
+
+// --- Product detail page ---
+.wl_toping_badge_detail {
+    top: 12px;
+    left: 12px;
+    font-size: 0.85rem;
+    padding: 6px 14px;
+
+    i {
+        font-size: 0.9rem;
+    }
+}
+
+// --- Mobile responsive ---
+@media (max-width: 768px) {
+    .wl_toping_badge {
+        top: 6px;
+        left: 6px;
+        font-size: 0.6rem;
+        padding: 3px 7px;
+
+        i {
+            font-size: 0.65rem;
+        }
+    }
+
+    .wl_toping_badge_detail {
+        top: 8px;
+        left: 8px;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+
+        i {
+            font-size: 0.8rem;
+        }
+    }
+}
+
+// --- Very small screens ---
+@media (max-width: 480px) {
+    .wl_toping_badge_list {
+        font-size: 0.55rem;
+        padding: 2px 6px;
+
+        i {
+            font-size: 0.6rem;
+        }
+    }
+}
+
+// --- Hide badge text on very tight card layouts, keep icon only ---
+@media (max-width: 360px) {
+    .wl_toping_badge_list {
+        padding: 3px 6px;
+
+        // Keep "Toping" text but shrink — it's important for UX
+        font-size: 0.5rem;
+    }
+}
