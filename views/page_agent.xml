@@ -9,7 +9,6 @@
                 (function() {
                     var STORAGE_KEY = 'wl_page_agent_history';
                     var PENDING_TASK_KEY = 'wl_page_agent_pending_task';
-                    var RESUME_DELAY = 2000; // Wait 2s after page load before resuming
 
                     // === Inject CSS AFTER page-agent loads ===
                     function injectCSS() {
@@ -125,41 +124,88 @@
                         }, 300);
                     }
 
-                    // === Auto-resume pending task after page load ===
-                    function autoResume(pa) {
+                    // === Show resume dialog when pending task exists ===
+                    function showResumeDialog(pa) {
                         var pending = sessionStorage.getItem(PENDING_TASK_KEY);
                         if (!pending) return;
 
-                        console.log('[Page Agent] Found pending task, resuming in ' + RESUME_DELAY + 'ms: ' + pending.substring(0, 50));
+                        console.log('[Page Agent] Found pending task: ' + pending.substring(0, 50));
 
-                        setTimeout(function() {
-                            // Double-check it's still pending (user might have cancelled)
-                            var stillPending = sessionStorage.getItem(PENDING_TASK_KEY);
-                            if (!stillPending) {
-                                console.log('[Page Agent] Pending task was cancelled, not resuming');
-                                return;
-                            }
+                        // Remove any existing dialog
+                        var existing = document.getElementById('wl-pa-resume-dialog');
+                        if (existing) existing.remove();
 
-                            // Clear pending before execute (execute will re-save if needed)
+                        // Build dialog
+                        var overlay = document.createElement('div');
+                        overlay.id = 'wl-pa-resume-dialog';
+                        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:Inter,-apple-system,sans-serif;';
+
+                        var box = document.createElement('div');
+                        box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);text-align:center;';
+
+                        var icon = document.createElement('div');
+                        icon.innerHTML = '🤖';
+                        icon.style.cssText = 'font-size:32px;margin-bottom:12px;';
+
+                        var title = document.createElement('h3');
+                        title.textContent = 'Lanjutkan tugas?';
+                        title.style.cssText = 'color:#5a080e;font-size:18px;font-weight:600;margin:0 0 8px 0;';
+
+                        var desc = document.createElement('p');
+                        desc.innerHTML = 'Ada tugas yang belum selesai:<br/><code style="background:#f5f5f5;padding:4px 8px;border-radius:4px;font-size:13px;color:#5a080e;">' + pending.substring(0, 60) + (pending.length > 60 ? '...' : '') + '</code>';
+                        desc.style.cssText = 'color:#666;font-size:14px;line-height:22px;margin:0 0 20px 0;';
+
+                        var btnRow = document.createElement('div');
+                        btnRow.style.cssText = 'display:flex;gap:12px;justify-content:center;';
+
+                        var btnDone = document.createElement('button');
+                        btnDone.textContent = 'Sudah selesai';
+                        btnDone.style.cssText = 'flex:1;padding:10px 16px;border:1px solid #ddd;background:#fff;color:#666;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:Inter,-apple-system,sans-serif;transition:all 0.2s;';
+                        btnDone.onmouseenter = function() { this.style.background = '#f5f5f5'; };
+                        btnDone.onmouseleave = function() { this.style.background = '#fff'; };
+
+                        var btnResume = document.createElement('button');
+                        btnResume.textContent = 'Lanjut';
+                        btnResume.style.cssText = 'flex:1;padding:10px 16px;border:none;background:#f5c400;color:#5a080e;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,-apple-system,sans-serif;transition:all 0.2s;';
+                        btnResume.onmouseenter = function() { this.style.background = '#e6b800'; };
+                        btnResume.onmouseleave = function() { this.style.background = '#f5c400'; };
+
+                        btnDone.onclick = function() {
+                            sessionStorage.removeItem(PENDING_TASK_KEY);
+                            overlay.remove();
+                            console.log('[Page Agent] User chose: Sudah selesai. Pending cleared.');
+                        };
+
+                        btnResume.onclick = function() {
+                            overlay.remove();
+                            var task = sessionStorage.getItem(PENDING_TASK_KEY);
+                            if (!task) return;
                             sessionStorage.removeItem(PENDING_TASK_KEY);
 
-                            // Check if agent is idle (not already running)
-                            if (pa.task &amp;&amp; pa.task !== '') {
-                                console.log('[Page Agent] Agent already running, not resuming');
-                                // Re-save as pending
-                                try { sessionStorage.setItem(PENDING_TASK_KEY, stillPending); } catch(e) {}
-                                return;
-                            }
+                            setTimeout(function() {
+                                if (pa.disposed) {
+                                    console.log('[Page Agent] Agent disposed, cannot resume');
+                                    return;
+                                }
+                                console.log('[Page Agent] User chose: Lanjut. Resuming...');
+                                pa.execute(task).then(function() {
+                                    console.log('[Page Agent] Resume completed');
+                                }).catch(function(e) {
+                                    console.log('[Page Agent] Resume failed: ' + (e.message || e));
+                                });
+                            }, 500);
+                        };
 
-                            console.log('[Page Agent] Auto-resuming task...');
-                            pa.execute(stillPending).then(function() {
-                                console.log('[Page Agent] Resume completed');
-                                try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
-                            }).catch(function(e) {
-                                console.log('[Page Agent] Resume failed: ' + (e.message || e));
-                                // Don't re-save on error — let user manually retry
-                            });
-                        }, RESUME_DELAY);
+                        btnRow.appendChild(btnDone);
+                        btnRow.appendChild(btnResume);
+                        box.appendChild(icon);
+                        box.appendChild(title);
+                        box.appendChild(desc);
+                        box.appendChild(btnRow);
+                        overlay.appendChild(box);
+                        document.body.appendChild(overlay);
+
+                        console.log('[Page Agent] Resume dialog shown');
                     }
 
                     // === Main setup ===
@@ -184,7 +230,7 @@
                             }
                         } catch(e) {}
 
-                        // 3. Start task monitor (saves task state + history to sessionStorage)
+                        // 3. Start task monitor
                         monitorTask(pa);
 
                         // 4. Save everything before page unload
@@ -199,8 +245,10 @@
                             } catch(e) {}
                         });
 
-                        // 5. Auto-resume if there's a pending task
-                        autoResume(pa);
+                        // 5. Show resume dialog if there's a pending task
+                        setTimeout(function() {
+                            showResumeDialog(pa);
+                        }, 2000);
 
                         return true;
                     }
