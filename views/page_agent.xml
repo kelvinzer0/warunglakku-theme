@@ -78,33 +78,41 @@
                     }
 
                     // === Task state monitoring + persistence ===
-                    var lastIndicatorClass = '';
                     var agentReady = false;
                     var taskWasActive = false;
+                    var savedTaskInstruction = '';
 
                     function monitorTask(pa) {
                         // Poll task state every 500ms
                         setInterval(function() {
                             if (!pa || pa.disposed) return;
 
-                            // Detect task completion via _completed_ CSS class on indicator
-                            var indicator = document.querySelector('[class*="_indicator_1tu05_"]');
-                            var isCompleted = indicator &amp;&amp; indicator.className.indexOf('_completed_') >= 0;
-                            var isThinking = indicator &amp;&amp; indicator.className.indexOf('_thinking_') >= 0;
+                            // Detect completion via statusText element
+                            var statusEl = document.querySelector('[class*="_statusText_1tu05_\"]');
+                            var statusText = statusEl ? statusEl.textContent.trim().toLowerCase() : '';
+                            var isCompleted = statusText.indexOf('task completed') >= 0 || statusText.indexOf('tugas selesai') >= 0;
+                            var isThinking = statusText.indexOf('sedang berpikir') >= 0 || statusText.indexOf('sedang menjalankan') >= 0 || statusText.indexOf('thinking') >= 0 || statusText.indexOf('executing') >= 0;
+                            var isIdle = statusText.indexOf('siap') >= 0 || statusText.indexOf('menunggu') >= 0 || statusText.indexOf('ready') >= 0 || statusText.indexOf('waiting') >= 0;
 
-                            // Detect task active via pa.taskId (set when running, cleared after)
-                            var isTaskRunning = pa.taskId &amp;&amp; pa.taskId !== '';
-
-                            if (isTaskRunning || isThinking) {
-                                // Task is ACTIVE
+                            if (isThinking) {
+                                // Task is ACTIVE — save instruction
                                 if (!taskWasActive) {
                                     taskWasActive = true;
-                                    try { sessionStorage.setItem(PENDING_TASK_KEY, pa.task || ''); } catch(e) {}
-                                    console.log('[Page Agent] Task active: ' + (pa.task || '').substring(0, 50));
+                                    // Read the task instruction from pa.task (set by execute())
+                                    var instruction = pa.task || '';
+                                    // If empty, try reading from the input field
+                                    if (!instruction) {
+                                        var input = document.querySelector('[class*="_taskInput_1tu05_\"]');
+                                        if (input &amp;&amp; input.value) instruction = input.value;
+                                    }
+                                    savedTaskInstruction = instruction;
+                                    try { sessionStorage.setItem(PENDING_TASK_KEY, instruction); } catch(e) {}
+                                    console.log('[Page Agent] Task active: ' + instruction.substring(0, 50));
                                 }
-                            } else if (taskWasActive &amp;&amp; (isCompleted || !isTaskRunning)) {
-                                // Task COMPLETED (was active, now indicator shows _completed_ or task stopped)
+                            } else if (taskWasActive &amp;&amp; (isCompleted || isIdle)) {
+                                // Task COMPLETED — was active, now shows completed or idle
                                 taskWasActive = false;
+                                savedTaskInstruction = '';
                                 try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
                                 console.log('[Page Agent] Task completed, cleared pending');
                             }
