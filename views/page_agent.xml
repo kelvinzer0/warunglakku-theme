@@ -4,7 +4,7 @@
               inherit_id="website.layout" priority="99">
         <xpath expr="//body" position="inside">
             <!-- WL fork of page-agent@1.12.1: autofocus on panel open removed for mobile UX -->
-            <script src="/warunglakku_theme/static/src/js/page-agent/page-agent.demo.js"></script>
+            <script src="/theme_warunglakku/static/src/js/page-agent/page-agent.demo.js"></script>
             <script>
                 (function() {
                     var STORAGE_KEY = 'wl_page_agent_history';
