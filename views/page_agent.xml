@@ -83,24 +83,24 @@
                     var savedTaskInstruction = '';
 
                     function monitorTask(pa) {
-                        // Poll task state every 500ms
+                        // Poll task state every 300ms (faster to catch brief states)
                         setInterval(function() {
                             if (!pa || pa.disposed) return;
 
-                            // Detect completion via statusText element
-                            var statusEl = document.querySelector('[class*="_statusText_1tu05_\"]');
-                            var statusText = statusEl ? statusEl.textContent.trim().toLowerCase() : '';
-                            var isCompleted = statusText.indexOf('task completed') >= 0 || statusText.indexOf('tugas selesai') >= 0;
-                            var isThinking = statusText.indexOf('sedang berpikir') >= 0 || statusText.indexOf('sedang menjalankan') >= 0 || statusText.indexOf('thinking') >= 0 || statusText.indexOf('executing') >= 0;
-                            var isIdle = statusText.indexOf('siap') >= 0 || statusText.indexOf('menunggu') >= 0 || statusText.indexOf('ready') >= 0 || statusText.indexOf('waiting') >= 0;
+                            // Detect task state via indicator CSS class + statusText
+                            // _thinking_ = actively working
+                            // _completed_ = just finished (brief)
+                            // no class / _error_ = idle
+                            var indicator = document.querySelector('[class*="_indicator_1tu05_"]');
+                            var indClass = indicator ? indicator.className : '';
+                            var isThinking = indClass.indexOf('_thinking_') >= 0;
+                            var isCompleted = indClass.indexOf('_completed_') >= 0;
 
                             if (isThinking) {
                                 // Task is ACTIVE — save instruction
                                 if (!taskWasActive) {
                                     taskWasActive = true;
-                                    // Read the task instruction from pa.task (set by execute())
                                     var instruction = pa.task || '';
-                                    // If empty, try reading from the input field
                                     if (!instruction) {
                                         var input = document.querySelector('[class*="_taskInput_1tu05_\"]');
                                         if (input &amp;&amp; input.value) instruction = input.value;
@@ -109,19 +109,20 @@
                                     try { sessionStorage.setItem(PENDING_TASK_KEY, instruction); } catch(e) {}
                                     console.log('[Page Agent] Task active: ' + instruction.substring(0, 50));
                                 }
-                            } else if (taskWasActive &amp;&amp; (isCompleted || isIdle)) {
-                                // Task COMPLETED — was active, now shows completed or idle
+                            } else if (taskWasActive) {
+                                // Was active, now NOT thinking → task ended (completed or stopped)
+                                // This catches _completed_ AND idle state (no special class)
                                 taskWasActive = false;
                                 savedTaskInstruction = '';
                                 try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
-                                console.log('[Page Agent] Task completed, cleared pending');
+                                console.log('[Page Agent] Task ended (completed=' + isCompleted + '), cleared pending');
                             }
 
                             // Always save history
                             if (pa.history &amp;&amp; pa.history.length > 0) {
                                 try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history)); } catch(e) {}
                             }
-                        }, 500);
+                        }, 300);
                     }
 
                     // === Auto-resume pending task after page load ===
