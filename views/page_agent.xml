@@ -8,66 +8,58 @@
             <script>
                 (function() {
                     var STORAGE_KEY = 'wl_page_agent_history';
-                    var H = '_1tu05_'; // CSS module hash
 
-                    function applyStyles() {
-                        var bg = document.querySelector('[class*="_background' + H + '"]');
-                        if (bg) {
-                            bg.style.setProperty('background', 'linear-gradient(135deg,rgba(90,8,14,0.97),rgba(122,12,20,0.97))', 'important');
-                            bg.style.setProperty('border-radius', '12px', 'important');
-                            bg.style.setProperty('box-shadow', '0 8px 32px rgba(90,8,14,0.3)', 'important');
-                        }
-                        var hist = document.querySelector('[class*="_historySectionWrapper' + H + '"]');
-                        if (hist) hist.style.setProperty('background', 'rgba(90,8,14,0.85)', 'important');
-                        var header = document.querySelector('[class*="_header' + H + '"]');
-                        if (header) header.style.setProperty('background', 'rgba(90,8,14,0.6)', 'important');
-                        var st = document.querySelector('[class*="_statusText' + H + '"]');
-                        if (st) {
-                            st.style.setProperty('color', '#f5c400', 'important');
-                            st.style.setProperty('font-weight', '600', 'important');
-                        }
-                        var ind = document.querySelector('[class*="_indicator' + H + '"]');
-                        if (ind) ind.style.setProperty('background', '#f5c400', 'important');
-                        var isw = document.querySelector('[class*="_inputSectionWrapper' + H + '"]');
-                        if (isw) isw.style.setProperty('background', 'rgba(253,251,245,0.95)', 'important');
-                        var input = document.querySelector('[class*="_taskInput' + H + '"]');
-                        if (input) {
-                            input.style.setProperty('background', '#fff', 'important');
-                            input.style.setProperty('color', '#1f1f1f', 'important');
-                            input.style.setProperty('border', '1px solid #ddd', 'important');
-                            input.style.setProperty('border-radius', '8px', 'important');
-                            input.style.setProperty('font-size', '13px', 'important');
-                            input.style.setProperty('padding', '8px 12px', 'important');
-                            input.style.setProperty('font-family', 'Inter,-apple-system,sans-serif', 'important');
-                            if (input.placeholder &amp;&amp; /[\u4e00-\u9fff]/.test(input.placeholder)) {
-                                input.placeholder = 'Tulis perintah... (contoh: pesan seblak)';
-                            }
-                        }
-                        var btns = document.querySelectorAll('[class*="_controlButton' + H + '"]');
-                        btns.forEach(function(b) {
-                            if (b.className.indexOf('_stopButton') < 0) {
-                                b.style.setProperty('background', 'rgba(245,196,0,0.15)', 'important');
-                                b.style.setProperty('color', '#f5c400', 'important');
-                                b.style.setProperty('border-radius', '6px', 'important');
-                            }
-                        });
+                    // Inject CSS AFTER page-agent loads (so we win the cascade)
+                    function injectCSS() {
+                        if (document.getElementById('wl-pa-style')) return;
+                        var style = document.createElement('style');
+                        style.id = 'wl-pa-style';
+                        style.textContent = `
+[class*="_background_1tu05_"] {
+    background: linear-gradient(135deg, rgba(90,8,14,0.97), rgba(122,12,20,0.97)) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(90,8,14,0.3) !important;
+}
+[class*="_historySectionWrapper_1tu05_"] { background: rgba(90,8,14,0.85) !important; }
+[class*="_header_1tu05_"] { background: rgba(90,8,14,0.6) !important; }
+[class*="_statusText_1tu05_"] { color: #f5c400 !important; font-weight: 600 !important; }
+[class*="_indicator_1tu05_"] { background: #f5c400 !important; }
+[class*="_inputSectionWrapper_1tu05_"] { background: rgba(253,251,245,0.95) !important; }
+[class*="_taskInput_1tu05_"] {
+    background: #fff !important; color: #1f1f1f !important;
+    border: 1px solid #ddd !important; border-radius: 8px !important;
+    font-size: 13px !important; padding: 8px 12px !important;
+    font-family: Inter, -apple-system, sans-serif !important;
+}
+[class*="_taskInput_1tu05_"]:focus {
+    border-color: #5a080e !important;
+    box-shadow: 0 0 0 2px rgba(90,8,14,0.1) !important;
+    outline: none !important;
+}
+[class*="_controlButton_1tu05_"]:not([class*="_stopButton"]) {
+    background: rgba(245,196,0,0.15) !important;
+    color: #f5c400 !important;
+    border-radius: 6px !important;
+}
+                        `;
+                        document.head.appendChild(style);
                     }
 
                     function fixText() {
-                        var input = document.querySelector('[class*="_taskInput' + H + '"]');
+                        var input = document.querySelector('[class*="_taskInput_1tu05_"]');
                         if (input &amp;&amp; input.placeholder &amp;&amp; /[\u4e00-\u9fff]/.test(input.placeholder)) {
                             input.placeholder = 'Tulis perintah... (contoh: pesan seblak)';
                         }
-                        var wrapper = document.querySelector('[class*="_wrapper' + H + '"]');
+                        var wrapper = document.querySelector('[class*="_wrapper_1tu05_"]');
                         if (!wrapper) return;
                         var walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT, null);
                         var node;
                         while (node = walker.nextNode()) {
                             var t = node.textContent;
                             if (t.indexOf('\u51c6\u5907\u5c31\u7eea') >= 0) node.textContent = node.textContent.replace(/\u51c6\u5907\u5c31\u7eea/g, 'Siap');
-                            if (t.indexOf('\u7b49\u5f85\u4efb\u52a1') >= 0) node.textContent = node.textContent.replace(/\u7b49\u5f85\u4efb\u52a1\u5f00\u59cb[^]*/g, 'Menunggu tugas...');
-                            if (t.indexOf('\u6b63\u5728\u601d\u8003') >= 0) node.textContent = node.textContent.replace(/\u6b63\u5728\u601d\u8003[^]*/g, 'Sedang berpikir...');
-                            if (t.indexOf('\u6b63\u5728\u6267\u884c') >= 0) node.textContent = node.textContent.replace(/\u6b63\u5728\u6267\u884c[^]*/g, 'Sedang menjalankan...');
+                            if (t.indexOf('\u7b49\u5f85\u4efb\u52a1') >= 0) node.textContent = node.textContent.replace(/\u7b49\u5f85\u4efb\u52a1[^\n]*/g, 'Menunggu tugas...');
+                            if (t.indexOf('\u6b63\u5728\u601d\u8003') >= 0) node.textContent = node.textContent.replace(/\u6b63\u5728\u601d\u8003[^\n]*/g, 'Sedang berpikir...');
+                            if (t.indexOf('\u6b63\u5728\u6267\u884c') >= 0) node.textContent = node.textContent.replace(/\u6b63\u5728\u6267\u884c[^\n]*/g, 'Sedang menjalankan...');
                             if (t.indexOf('\u4efb\u52a1\u5b8c\u6210') >= 0) node.textContent = node.textContent.replace(/\u4efb\u52a1\u5b8c\u6210/g, 'Tugas selesai');
                             if (t.indexOf('\u4efb\u52a1\u5df2\u505c\u6b62') >= 0) node.textContent = node.textContent.replace(/\u4efb\u52a1\u5df2\u505c\u6b62/g, 'Tugas dihentikan');
                             if (t.indexOf('\u51fa\u73b0\u9519\u8bef') >= 0) node.textContent = node.textContent.replace(/\u51fa\u73b0\u9519\u8bef/g, 'Terjadi kesalahan');
@@ -101,19 +93,18 @@
                         return true;
                     }
 
-                    // Apply styles + fix text on interval (60 seconds)
+                    // Wait for page-agent to load, then inject CSS + fix text
                     var attempts = 0;
                     var interval = setInterval(function() {
                         attempts++;
-                        applyStyles();
+                        injectCSS();
                         fixText();
                         if (window.pageAgent &amp;&amp; !window.pageAgent.disposed) setupAgent();
                         if (attempts >= 120) clearInterval(interval);
                     }, 500);
 
-                    // MutationObserver: re-apply on ANY DOM change (indefinite)
+                    // MutationObserver: fix text on DOM changes (indefinite)
                     var observer = new MutationObserver(function() {
-                        applyStyles();
                         fixText();
                     });
                     if (document.body) {
