@@ -278,6 +278,69 @@
                             }
                         } catch(e) {}
 
+                        // 1b. Enhance ask_user tool description — make agent prefer asking over guessing
+                        try {
+                            if (pa.tools &amp;&amp; pa.tools.has &amp;&amp; pa.tools.has('ask_user')) {
+                                var askTool = pa.tools.get('ask_user');
+                                askTool.description = 'Ask the user a question and wait for their answer. ' +
+                                    'ALWAYS use this tool before filling forms with personal information ' +
+                                    '(name, email, phone, address, password). ' +
+                                    'NEVER guess or use placeholder/test values like "test@test.com" or "John Doe". ' +
+                                    'If you encounter a form that requires user details, ask the user first.';
+                            }
+                        } catch(e) {
+                            console.log('[Page Agent] Could not enhance ask_user: ' + e.message);
+                        }
+
+                        // 1c. Intercept form fills on /shop/address — block dummy data
+                        var formInterceptorInterval = setInterval(function() {
+                            if (window.location.pathname.indexOf('/shop/address') &lt; 0) return;
+                            // Override input values that look like test data
+                            var inputs = document.querySelectorAll('form input[name], form textarea[name], form select[name]');
+                            inputs.forEach(function(input) {
+                                if (input.dataset._wl_monitored) return;
+                                input.dataset._wl_monitored = 'true';
+                                // Watch for programmatic value changes
+                                var origSetter = Object.getOwnPropertyDescriptor(
+                                    input.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype :
+                                    input.tagName === 'SELECT' ? HTMLSelectElement.prototype :
+                                    HTMLInputElement.prototype, 'value'
+                                ).set;
+                                Object.defineProperty(input, 'value', {
+                                    get: function() { return origGetter.call(this); },
+                                    set: function(val) {
+                                        // Block common test/dummy values
+                                        var lowerVal = (val || '').toLowerCase().trim();
+                                        var dummyPatterns = ['test', 'dummy', 'john doe', 'jane doe',
+                                            'test@test', 'example.com', '123456', 'aaa', 'xxx',
+                                            'foo@', 'bar@', 'asdf', 'qwerty'];
+                                        var isDummy = dummyPatterns.some(function(p) {
+                                            return lowerVal.indexOf(p) >= 0;
+                                        });
+                                        if (isDummy &amp;&amp; input.name !== 'csrf_token') {
+                                            console.log('[Page Agent] Blocked dummy value for ' + input.name + ': ' + val);
+                                            // Show ask prompt to user instead
+                                            var pa2 = window.pageAgent;
+                                            if (pa2 &amp;&amp; pa2.onAskUser) {
+                                                pa2.onAskUser('Form ' + input.name + ' membutuhkan data asli Anda. Silakan isi sendiri:').then(function(answer) {
+                                                    if (answer) origSetter.call(input, answer);
+                                                });
+                                            }
+                                            return; // Block the dummy value
+                                        }
+                                        origSetter.call(this, val);
+                                    }
+                                });
+                                var origGetter = Object.getOwnPropertyDescriptor(
+                                    input.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype :
+                                    input.tagName === 'SELECT' ? HTMLSelectElement.prototype :
+                                    HTMLInputElement.prototype, 'value'
+                                ).get;
+                            });
+                        }, 1000);
+                        // Stop interceptor after 60s
+                        setTimeout(function() { clearInterval(formInterceptorInterval); }, 60000);
+
                         // 2. Restore chat history
                         try {
                             var saved = sessionStorage.getItem(STORAGE_KEY);
