@@ -78,26 +78,35 @@
                     }
 
                     // === Task state monitoring + persistence ===
-                    var lastTaskState = '';
+                    var lastIndicatorClass = '';
                     var agentReady = false;
+                    var taskWasActive = false;
 
                     function monitorTask(pa) {
                         // Poll task state every 500ms
                         setInterval(function() {
                             if (!pa || pa.disposed) return;
-                            var currentTask = pa.task || '';
 
-                            if (currentTask !== lastTaskState) {
-                                if (currentTask) {
-                                    // Task STARTED — save to sessionStorage
-                                    try { sessionStorage.setItem(PENDING_TASK_KEY, currentTask); } catch(e) {}
-                                    console.log('[Page Agent] Task active: ' + currentTask.substring(0, 50));
-                                } else {
-                                    // Task COMPLETED — clear pending
-                                    try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
-                                    console.log('[Page Agent] Task completed, cleared pending');
+                            // Detect task completion via _completed_ CSS class on indicator
+                            var indicator = document.querySelector('[class*="_indicator_1tu05_"]');
+                            var isCompleted = indicator &amp;&amp; indicator.className.indexOf('_completed_') >= 0;
+                            var isThinking = indicator &amp;&amp; indicator.className.indexOf('_thinking_') >= 0;
+
+                            // Detect task active via pa.taskId (set when running, cleared after)
+                            var isTaskRunning = pa.taskId &amp;&amp; pa.taskId !== '';
+
+                            if (isTaskRunning || isThinking) {
+                                // Task is ACTIVE
+                                if (!taskWasActive) {
+                                    taskWasActive = true;
+                                    try { sessionStorage.setItem(PENDING_TASK_KEY, pa.task || ''); } catch(e) {}
+                                    console.log('[Page Agent] Task active: ' + (pa.task || '').substring(0, 50));
                                 }
-                                lastTaskState = currentTask;
+                            } else if (taskWasActive &amp;&amp; (isCompleted || !isTaskRunning)) {
+                                // Task COMPLETED (was active, now indicator shows _completed_ or task stopped)
+                                taskWasActive = false;
+                                try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
+                                console.log('[Page Agent] Task completed, cleared pending');
                             }
 
                             // Always save history
