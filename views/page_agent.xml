@@ -177,18 +177,23 @@
                         };
 
                         btnResume.onclick = function() {
-                            overlay.remove();
                             var task = sessionStorage.getItem(PENDING_TASK_KEY);
-                            if (!task) return;
+                            overlay.remove();
+                            if (!task) {
+                                console.log('[Page Agent] No pending task found');
+                                return;
+                            }
                             sessionStorage.removeItem(PENDING_TASK_KEY);
 
                             setTimeout(function() {
-                                if (pa.disposed) {
-                                    console.log('[Page Agent] Agent disposed, cannot resume');
+                                // Use window.pageAgent (fresh reference, not stale closure)
+                                var currentPa = window.pageAgent;
+                                if (!currentPa || currentPa.disposed) {
+                                    console.log('[Page Agent] Agent not available, cannot resume');
                                     return;
                                 }
-                                console.log('[Page Agent] User chose: Lanjut. Resuming...');
-                                pa.execute(task).then(function() {
+                                console.log('[Page Agent] User chose: Lanjut. Resuming: ' + task.substring(0, 50));
+                                currentPa.execute(task).then(function() {
                                     console.log('[Page Agent] Resume completed');
                                 }).catch(function(e) {
                                     console.log('[Page Agent] Resume failed: ' + (e.message || e));
