@@ -8,8 +8,10 @@
             <script>
                 (function() {
                     var STORAGE_KEY = 'wl_page_agent_history';
+                    var PENDING_TASK_KEY = 'wl_page_agent_pending_task';
+                    var RESUME_DELAY = 2000; // Wait 2s after page load before resuming
 
-                    // Inject CSS AFTER page-agent loads (so we win the cascade)
+                    // === Inject CSS AFTER page-agent loads ===
                     function injectCSS() {
                         if (document.getElementById('wl-pa-style')) return;
                         var style = document.createElement('style');
@@ -41,10 +43,18 @@
     color: #f5c400 !important;
     border-radius: 6px !important;
 }
+[class*="_statusSection_1tu05_"] {
+    display: flex !important; align-items: center !important; gap: 6px !important;
+}
+[class*="_historySection_1tu05_"]::-webkit-scrollbar { width: 4px !important; }
+[class*="_historySection_1tu05_"]::-webkit-scrollbar-thumb {
+    background: rgba(245,196,0,0.3) !important; border-radius: 4px !important;
+}
                         `;
                         document.head.appendChild(style);
                     }
 
+                    // === Fix Chinese text → Indonesian ===
                     function fixText() {
                         var input = document.querySelector('[class*="_taskInput_1tu05_"]');
                         if (input &amp;&amp; input.placeholder &amp;&amp; /[\u4e00-\u9fff]/.test(input.placeholder)) {
@@ -63,18 +73,91 @@
                             if (t.indexOf('\u4efb\u52a1\u5b8c\u6210') >= 0) node.textContent = node.textContent.replace(/\u4efb\u52a1\u5b8c\u6210/g, 'Tugas selesai');
                             if (t.indexOf('\u4efb\u52a1\u5df2\u505c\u6b62') >= 0) node.textContent = node.textContent.replace(/\u4efb\u52a1\u5df2\u505c\u6b62/g, 'Tugas dihentikan');
                             if (t.indexOf('\u51fa\u73b0\u9519\u8bef') >= 0) node.textContent = node.textContent.replace(/\u51fa\u73b0\u9519\u8bef/g, 'Terjadi kesalahan');
+                            if (t.indexOf('\u8f93\u5165\u65b0\u4efb\u52a1') >= 0) node.textContent = node.textContent.replace(/\u8f93\u5165\u65b0\u4efb\u52a1[^]*/g, 'Tulis perintah...');
                         }
                     }
 
+                    // === Task state monitoring + persistence ===
+                    var lastTaskState = '';
+                    var agentReady = false;
+
+                    function monitorTask(pa) {
+                        // Poll task state every 500ms
+                        setInterval(function() {
+                            if (!pa || pa.disposed) return;
+                            var currentTask = pa.task || '';
+
+                            if (currentTask !== lastTaskState) {
+                                if (currentTask) {
+                                    // Task STARTED — save to sessionStorage
+                                    try { sessionStorage.setItem(PENDING_TASK_KEY, currentTask); } catch(e) {}
+                                    console.log('[Page Agent] Task active: ' + currentTask.substring(0, 50));
+                                } else {
+                                    // Task COMPLETED — clear pending
+                                    try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
+                                    console.log('[Page Agent] Task completed, cleared pending');
+                                }
+                                lastTaskState = currentTask;
+                            }
+
+                            // Always save history
+                            if (pa.history &amp;&amp; pa.history.length > 0) {
+                                try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history)); } catch(e) {}
+                            }
+                        }, 500);
+                    }
+
+                    // === Auto-resume pending task after page load ===
+                    function autoResume(pa) {
+                        var pending = sessionStorage.getItem(PENDING_TASK_KEY);
+                        if (!pending) return;
+
+                        console.log('[Page Agent] Found pending task, resuming in ' + RESUME_DELAY + 'ms: ' + pending.substring(0, 50));
+
+                        setTimeout(function() {
+                            // Double-check it's still pending (user might have cancelled)
+                            var stillPending = sessionStorage.getItem(PENDING_TASK_KEY);
+                            if (!stillPending) {
+                                console.log('[Page Agent] Pending task was cancelled, not resuming');
+                                return;
+                            }
+
+                            // Clear pending before execute (execute will re-save if needed)
+                            sessionStorage.removeItem(PENDING_TASK_KEY);
+
+                            // Check if agent is idle (not already running)
+                            if (pa.task &amp;&amp; pa.task !== '') {
+                                console.log('[Page Agent] Agent already running, not resuming');
+                                // Re-save as pending
+                                try { sessionStorage.setItem(PENDING_TASK_KEY, stillPending); } catch(e) {}
+                                return;
+                            }
+
+                            console.log('[Page Agent] Auto-resuming task...');
+                            pa.execute(stillPending).then(function() {
+                                console.log('[Page Agent] Resume completed');
+                                try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
+                            }).catch(function(e) {
+                                console.log('[Page Agent] Resume failed: ' + (e.message || e));
+                                // Don't re-save on error — let user manually retry
+                            });
+                        }, RESUME_DELAY);
+                    }
+
+                    // === Main setup ===
                     function setupAgent() {
                         var pa = window.pageAgent;
                         if (!pa || pa.disposed) return false;
+
+                        // 1. Set language
                         try {
                             pa.config.language = 'id-ID';
                             if (pa.config.pageController &amp;&amp; pa.config.pageController.config) {
                                 pa.config.pageController.config.language = 'id-ID';
                             }
                         } catch(e) {}
+
+                        // 2. Restore chat history
                         try {
                             var saved = sessionStorage.getItem(STORAGE_KEY);
                             if (saved) {
@@ -82,28 +165,46 @@
                                 if (Array.isArray(h) &amp;&amp; h.length > 0) pa.history = h;
                             }
                         } catch(e) {}
-                        try {
-                            pa.addEventListener('message', function() {
-                                try { if (pa.history &amp;&amp; pa.history.length > 0) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history)); } catch(e) {}
-                            });
-                        } catch(e) {}
+
+                        // 3. Start task monitor (saves task state + history to sessionStorage)
+                        monitorTask(pa);
+
+                        // 4. Save everything before page unload
                         window.addEventListener('beforeunload', function() {
-                            try { if (pa.history &amp;&amp; pa.history.length > 0) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history)); } catch(e) {}
+                            try {
+                                if (pa.task &amp;&amp; pa.task !== '') {
+                                    sessionStorage.setItem(PENDING_TASK_KEY, pa.task);
+                                }
+                                if (pa.history &amp;&amp; pa.history.length > 0) {
+                                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pa.history));
+                                }
+                            } catch(e) {}
                         });
+
+                        // 5. Auto-resume if there's a pending task
+                        autoResume(pa);
+
                         return true;
                     }
 
-                    // Wait for page-agent to load, then inject CSS + fix text
+                    // === Init loop ===
                     var attempts = 0;
                     var interval = setInterval(function() {
                         attempts++;
                         injectCSS();
                         fixText();
-                        if (window.pageAgent &amp;&amp; !window.pageAgent.disposed) setupAgent();
+                        if (window.pageAgent &amp;&amp; !window.pageAgent.disposed) {
+                            if (!agentReady) {
+                                if (setupAgent()) {
+                                    agentReady = true;
+                                    console.log('[Page Agent] Warung Lakku AI ready (styled, Indonesian, auto-resume enabled)');
+                                }
+                            }
+                        }
                         if (attempts >= 120) clearInterval(interval);
                     }, 500);
 
-                    // MutationObserver: fix text on DOM changes (indefinite)
+                    // MutationObserver: fix text on DOM changes
                     var observer = new MutationObserver(function() {
                         fixText();
                     });
