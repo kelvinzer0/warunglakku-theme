@@ -221,6 +221,89 @@ def test_sort_with_extra_stopwords():
     assert sorted_with_stop == [3, 1, 2], f"With stopword: {sorted_with_stop}"
 
 
+def test_sort_with_toping_ids_pushed_to_end():
+    """Toping products (in toping_ids) should appear AFTER non-toping."""
+    products_data = [
+        {'id': 1, 'name': "Kerupuk Bawang"},   # non-toping, score 2
+        {'id': 2, 'name': "Kerupuk Oren"},     # non-toping, score 2
+        {'id': 3, 'name': "Kerupuk Bintang"},  # non-toping, score 2
+        {'id': 4, 'name': "Bakso Sapi"},       # non-toping, score 1
+        {'id': 5, 'name': "Bakso Ikan"},       # non-toping, score 1
+        {'id': 6, 'name': "Telur Asin"},       # non-toping, score 0
+        {'id': 7, 'name': "Sosis"},            # TOPING (pushed to end)
+        {'id': 8, 'name': "Ceker"},            # TOPING (pushed to end)
+    ]
+    # Without toping_ids: standard similarity sort
+    sorted_no_toping = sort_product_ids_by_similarity(products_data)
+    # Kerupuk (score 2) alphabetical: 1, 3, 2
+    # Bakso (score 1) alphabetical: 5, 4
+    # Score 0 alphabetical: 8 (ceker), 7 (sosis), 6 (telur asin)
+    assert sorted_no_toping == [1, 3, 2, 5, 4, 8, 7, 6], \
+        f"Without toping: {sorted_no_toping}"
+
+    # With toping_ids={7, 8}: those products pushed to end
+    # Non-toping first (sorted by similarity among themselves):
+    #   Kerupuk (score 2): 1, 3, 2; Bakso (score 1): 5, 4; Telur (0): 6
+    # Then toping (sorted by similarity among themselves, but they're alone):
+    #   Both have score 0 (no shared words with each other), alphabetical:
+    #   "ceker" < "sosis" → 8, 7
+    sorted_with_toping = sort_product_ids_by_similarity(
+        products_data, toping_ids=frozenset({7, 8})
+    )
+    assert sorted_with_toping == [1, 3, 2, 5, 4, 6, 8, 7], \
+        f"With toping: {sorted_with_toping}"
+
+
+def test_sort_toping_among_themselves_by_similarity():
+    """Toping products sort among themselves by similarity, not just alphabetical."""
+    products_data = [
+        {'id': 1, 'name': "Main Dish"},        # non-toping
+        {'id': 2, 'name': "Bakso Toping A"},   # toping
+        {'id': 3, 'name': "Bakso Toping B"},   # toping (shares 'bakso' with #2)
+        {'id': 4, 'name': "Solo Toping"},      # toping
+    ]
+    # Toping IDs: 2, 3, 4
+    # Among toping:
+    #   - 'bakso' shared between #2 and #3 → both score 1
+    #   - 'solo' unique to #4 → score 0
+    # So toping order: #2 (1), #3 (1) [alphabetical A<B], then #4 (0)
+    # Non-toping: just #1 (score 0)
+    sorted_result = sort_product_ids_by_similarity(
+        products_data, toping_ids=frozenset({2, 3, 4})
+    )
+    assert sorted_result == [1, 2, 3, 4], \
+        f"Toping similarity sort: {sorted_result}"
+
+
+def test_sort_all_toping():
+    """If all products are toping, similarity sort still applies among them."""
+    products_data = [
+        {'id': 1, 'name': "Kerupuk A"},
+        {'id': 2, 'name': "Kerupuk B"},
+        {'id': 3, 'name': "Kerupuk C"},
+        {'id': 4, 'name': "Solo"},
+    ]
+    # All toping: #1, #2, #3 share 'kerupuk' → each score 2
+    # #4 'solo' unique → score 0
+    # Sort: 1, 2, 3 (score 2 alphabetical), then 4 (score 0)
+    sorted_result = sort_product_ids_by_similarity(
+        products_data, toping_ids=frozenset({1, 2, 3, 4})
+    )
+    assert sorted_result == [1, 2, 3, 4], f"All toping: {sorted_result}"
+
+
+def test_sort_none_toping_ids():
+    """toping_ids=None should behave like no toping filtering."""
+    products_data = [
+        {'id': 1, 'name': "Bakso"},
+        {'id': 2, 'name': "Telur"},
+    ]
+    sorted_none = sort_product_ids_by_similarity(products_data, toping_ids=None)
+    sorted_empty = sort_product_ids_by_similarity(products_data, toping_ids=frozenset())
+    assert sorted_none == sorted_empty, \
+        f"None vs empty: {sorted_none} vs {sorted_empty}"
+
+
 def test_extra_stopwords_filters_category_name():
     """When browsing /shop?category=seblak, 'seblak' should not inflate scores."""
     products = [
@@ -266,6 +349,10 @@ def run_all():
         ('test_sort_empty', test_sort_empty),
         ('test_sort_single_product', test_sort_single_product),
         ('test_sort_with_extra_stopwords', test_sort_with_extra_stopwords),
+        ('test_sort_with_toping_ids_pushed_to_end', test_sort_with_toping_ids_pushed_to_end),
+        ('test_sort_toping_among_themselves_by_similarity', test_sort_toping_among_themselves_by_similarity),
+        ('test_sort_all_toping', test_sort_all_toping),
+        ('test_sort_none_toping_ids', test_sort_none_toping_ids),
         ('test_extra_stopwords_filters_category_name', test_extra_stopwords_filters_category_name),
     ]
     passed = 0

@@ -143,16 +143,25 @@ def compute_similarity_scores(products, extra_stopwords=None):
     return scores
 
 
-def sort_product_ids_by_similarity(products_data, extra_stopwords=None):
+def sort_product_ids_by_similarity(products_data, extra_stopwords=None,
+                                    toping_ids=None):
     """Sort product IDs by similarity score (DESC), then name (ASC).
+
+    Products in `toping_ids` are pushed to the END of the list, sorted
+    among themselves by similarity. Non-toping products come first.
 
     Args:
         products_data: list of dicts with 'id' and 'name' keys
                        (e.g. [{"id": 42, "name": "Bakso Keju"}, ...])
         extra_stopwords: optional set of words to filter from tokenization
+        toping_ids: optional set of product IDs that should be pushed to
+                    the end (e.g. Seblak products priced <= 6000 which
+                    carry the "Toping" badge)
 
     Returns:
-        list of product IDs in similarity-sorted order
+        list of product IDs in sorted order:
+          [non-toping by similarity desc, name asc]
+          + [toping by similarity desc, name asc]
     """
     class _P:
         __slots__ = ('id', 'name')
@@ -164,9 +173,19 @@ def sort_product_ids_by_similarity(products_data, extra_stopwords=None):
     scores = compute_similarity_scores(products, extra_stopwords)
     name_lower_map = {p.id: (p.name or '').lower() for p in products}
 
+    toping_set = toping_ids or frozenset()
+
+    # Sort key:
+    #   1. Toping flag (0 = non-toping first, 1 = toping last)
+    #   2. Similarity score DESC (negative for ascending sort)
+    #   3. Name ASC (lowercase)
     return sorted(
         [p.id for p in products],
-        key=lambda pid: (-scores.get(pid, 0), name_lower_map.get(pid, ''))
+        key=lambda pid: (
+            1 if pid in toping_set else 0,            # toping to end
+            -scores.get(pid, 0),                       # score desc
+            name_lower_map.get(pid, '')                # name asc
+        )
     )
 
 
@@ -214,8 +233,13 @@ class WLSimilaritySortWebsiteSale(WebsiteSale):
             return fuzzy_search_term, product_count, search_product
 
         try:
-            # === Read names (minimal DB load) ===
-            products_data = search_product.read(['name'])
+            # === Read names + categories + price (minimal DB load) ===
+            # We need public_categ_ids + list_price to detect "toping"
+            # products (Seblak + price <= 6000) which should be pushed
+            # to the end of the listing per business rule.
+            products_data = search_product.read([
+                'name', 'public_categ_ids', 'list_price'
+            ])
 
             # === Build extra stopwords from current category name ===
             # When browsing /shop?category=seblak, every product has
@@ -226,8 +250,25 @@ class WLSimilaritySortWebsiteSale(WebsiteSale):
             if category and hasattr(category, 'name') and category.name:
                 extra_stop = frozenset(_WORD_RE.findall(category.name.lower()))
 
-            # === Sort IDs by similarity ===
-            sorted_ids = sort_product_ids_by_similarity(products_data, extra_stop)
+            # === Identify Toping products (push to end of listing) ===
+            # Rule matches views/product_toping_badge.xml t-if:
+            #   Seblak category (id=6) AND list_price <= 6000
+            # Such products carry the yellow "Toping" badge in UI, and
+            # per business rule they should appear AFTER non-toping
+            # products in the default sort. Within the toping group,
+            # similarity sort still applies.
+            SEBLAK_CATEGORY_ID = 6
+            TOPING_PRICE_THRESHOLD = 6000
+            toping_ids = frozenset(
+                d['id'] for d in products_data
+                if SEBLAK_CATEGORY_ID in (d.get('public_categ_ids') or [])
+                and (d.get('list_price') or 0) <= TOPING_PRICE_THRESHOLD
+            )
+
+            # === Sort IDs by (toping_flag, similarity, name) ===
+            sorted_ids = sort_product_ids_by_similarity(
+                products_data, extra_stop, toping_ids=toping_ids
+            )
 
             # === Re-browse in sorted order ===
             # This preserves the same recordset (same count, same domain)
@@ -236,8 +277,10 @@ class WLSimilaritySortWebsiteSale(WebsiteSale):
             search_product = search_product.browse(sorted_ids)
 
             _logger.debug(
-                '[WL Similarity Sort] %d products re-sorted. Top 5 IDs: %s',
+                '[WL Similarity Sort] %d products re-sorted '
+                '(%d toping pushed to end). Top 5 IDs: %s',
                 len(sorted_ids),
+                len(toping_ids),
                 sorted_ids[:5]
             )
 
