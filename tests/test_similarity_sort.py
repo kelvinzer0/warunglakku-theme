@@ -21,19 +21,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 with open(os.path.join(os.path.dirname(__file__), '..', 'controllers', 'main.py')) as f:
     src = f.read()
 
-# Extract only the algorithm section:
-#   import re / import logging
-#   ...
-#   def build_similarity_order_sql(...)
-# We stop BEFORE the line that starts 'class _LightweightProduct'
-# and strip any odoo-importing lines.
+# Extract only the algorithm section: from 'import re' to end of
+# sort_product_ids_by_similarity function. We do this by finding the
+# line numbers and slicing.
+lines = src.split('\n')
+start_idx = None
+end_idx = None
+for i, line in enumerate(lines):
+    if line.startswith('import re') and start_idx is None:
+        start_idx = i
+    if 'def sort_product_ids_by_similarity' in line:
+        # Find end of this function (next 'def' or 'class' at column 0)
+        for j in range(i + 1, len(lines)):
+            if lines[j].startswith('def ') or lines[j].startswith('class '):
+                end_idx = j
+                break
+        break
 
-# Find the algorithm section (from 'import re' to end of build_similarity_order_sql)
-m = _re.search(
-    r'(import re\nimport logging.*?return \'CASE id.*?ELSE 1000000 END, name\' % cases)\n',
-    src, _re.DOTALL
-)
-algo_src = m.group(1)
+if start_idx is None or end_idx is None:
+    raise RuntimeError('Could not extract algorithm section')
+
+algo_src = '\n'.join(lines[start_idx:end_idx])
 
 # Strip any line that imports odoo
 algo_src = '\n'.join(
@@ -46,7 +54,7 @@ exec(algo_src, ns)
 
 tokenize = ns['tokenize']
 compute_similarity_scores = ns['compute_similarity_scores']
-build_similarity_order_sql = ns['build_similarity_order_sql']
+sort_product_ids_by_similarity = ns['sort_product_ids_by_similarity']
 
 
 class _P:
@@ -164,48 +172,53 @@ def test_similarity_score_higher_for_more_shared():
     assert scores[6] == 0
 
 
-def test_build_sql_basic():
-    """CASE WHEN SQL should match expected format."""
-    sql = build_similarity_order_sql([42, 18, 7])
-    assert sql == "CASE id WHEN 42 THEN 0 WHEN 18 THEN 1 WHEN 7 THEN 2 ELSE 1000000 END, name"
-
-
-def test_build_sql_empty_returns_none():
-    assert build_similarity_order_sql([]) is None
-
-
-def test_build_sql_caps_at_1000():
-    """Long lists should be capped to avoid SQL parsing overhead."""
-    ids = list(range(1, 2001))
-    sql = build_similarity_order_sql(ids)
-    when_count = sql.count('WHEN ')
-    assert when_count == 1000, f"Expected 1000 WHENs, got {when_count}"
-
-
-def test_end_to_end_sorting():
-    """End-to-end: full sort pipeline produces expected order."""
-    products = [
-        _P(1, "Kerupuk Bawang"),
-        _P(2, "Kerupuk Oren"),
-        _P(3, "Kerupuk Bintang"),
-        _P(4, "Bakso Sapi"),
-        _P(5, "Bakso Ikan"),
-        _P(6, "Telur Asin"),
-        _P(7, "Sosis"),
+def test_sort_returns_sorted_ids():
+    """sort_product_ids_by_similarity returns list of IDs in similarity order."""
+    products_data = [
+        {'id': 1, 'name': "Kerupuk Bawang"},
+        {'id': 2, 'name': "Kerupuk Oren"},
+        {'id': 3, 'name': "Kerupuk Bintang"},
+        {'id': 4, 'name': "Bakso Sapi"},
+        {'id': 5, 'name': "Bakso Ikan"},
+        {'id': 6, 'name': "Telur Asin"},
+        {'id': 7, 'name': "Sosis"},
     ]
-    # 'kerupuk' in 3 products, 'bakso' in 2 products
-    scores = compute_similarity_scores(products)
-    name_lower = {p.id: p.name.lower() for p in products}
-    sorted_ids = sorted(
-        [p.id for p in products],
-        key=lambda pid: (-scores[pid], name_lower[pid])
-    )
-    # Expected: kerupuk products first (score 2, alphabetical),
-    # then bakso products (score 1, alphabetical),
-    # then score-0 alphabetical: "sosis" < "telur asin"
-    # Kerupuk: "bawang" < "bintang" < "oren" → 1, 3, 2
-    # Bakso: "ikan" < "sapi" → 5, 4
+    sorted_ids = sort_product_ids_by_similarity(products_data)
+    # Kerupuk (score 2) first, alphabetical: Bawang, Bintang, Oren → 1, 3, 2
+    # Bakso (score 1) next, alphabetical: Ikan, Sapi → 5, 4
+    # Score 0 alphabetical: "sosis" < "telur asin" → 7, 6
     assert sorted_ids == [1, 3, 2, 5, 4, 7, 6], f"Got: {sorted_ids}"
+
+
+def test_sort_empty():
+    """Empty input → empty list."""
+    assert sort_product_ids_by_similarity([]) == []
+
+
+def test_sort_single_product():
+    """Single product → list with that ID."""
+    result = sort_product_ids_by_similarity([{'id': 42, 'name': 'Solo'}])
+    assert result == [42]
+
+
+def test_sort_with_extra_stopwords():
+    """Category name as stopword prevents it from inflating scores."""
+    products_data = [
+        {'id': 1, 'name': "Seblak Komplit"},
+        {'id': 2, 'name': "Seblak Pentol"},
+        {'id': 3, 'name': "Kerupuk Bawang"},
+    ]
+    # Without stopword: 'seblak' shared by #1 and #2 → both score 1
+    sorted_no_stop = sort_product_ids_by_similarity(products_data)
+    # Scores: 1=1, 2=1, 3=0. Sort: 1, 2 (score 1 alphabetical), then 3
+    assert sorted_no_stop == [1, 2, 3], f"Without stopword: {sorted_no_stop}"
+
+    # With 'seblak' stopword: 'seblak' filtered, scores all 0
+    # → alphabetical: "Kerupuk Bawang" < "Seblak Komplit" < "Seblak Pentol"
+    sorted_with_stop = sort_product_ids_by_similarity(
+        products_data, extra_stopwords=frozenset({'seblak'})
+    )
+    assert sorted_with_stop == [3, 1, 2], f"With stopword: {sorted_with_stop}"
 
 
 def test_extra_stopwords_filters_category_name():
@@ -249,10 +262,10 @@ def run_all():
         ('test_similarity_score_with_shared_word', test_similarity_score_with_shared_word),
         ('test_similarity_score_multi_word_match', test_similarity_score_multi_word_match),
         ('test_similarity_score_higher_for_more_shared', test_similarity_score_higher_for_more_shared),
-        ('test_build_sql_basic', test_build_sql_basic),
-        ('test_build_sql_empty_returns_none', test_build_sql_empty_returns_none),
-        ('test_build_sql_caps_at_1000', test_build_sql_caps_at_1000),
-        ('test_end_to_end_sorting', test_end_to_end_sorting),
+        ('test_sort_returns_sorted_ids', test_sort_returns_sorted_ids),
+        ('test_sort_empty', test_sort_empty),
+        ('test_sort_single_product', test_sort_single_product),
+        ('test_sort_with_extra_stopwords', test_sort_with_extra_stopwords),
         ('test_extra_stopwords_filters_category_name', test_extra_stopwords_filters_category_name),
     ]
     passed = 0
