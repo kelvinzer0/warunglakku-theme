@@ -125,9 +125,12 @@
                     }
 
                     // === Show resume dialog when pending task exists ===
-                    function showResumeDialog(pa) {
+                    function showResumeDialog() {
                         var pending = sessionStorage.getItem(PENDING_TASK_KEY);
                         if (!pending) return;
+
+                        // Immediately clear from storage — we have it in JS variable now
+                        sessionStorage.removeItem(PENDING_TASK_KEY);
 
                         console.log('[Page Agent] Found pending task: ' + pending.substring(0, 50));
 
@@ -177,23 +180,16 @@
                         };
 
                         btnResume.onclick = function() {
-                            var task = sessionStorage.getItem(PENDING_TASK_KEY);
                             overlay.remove();
-                            if (!task) {
-                                console.log('[Page Agent] No pending task found');
-                                return;
-                            }
-                            sessionStorage.removeItem(PENDING_TASK_KEY);
-
+                            // 'pending' is captured in closure — no need to re-read from sessionStorage
                             setTimeout(function() {
-                                // Use window.pageAgent (fresh reference, not stale closure)
                                 var currentPa = window.pageAgent;
                                 if (!currentPa || currentPa.disposed) {
                                     console.log('[Page Agent] Agent not available, cannot resume');
                                     return;
                                 }
-                                console.log('[Page Agent] User chose: Lanjut. Resuming: ' + task.substring(0, 50));
-                                currentPa.execute(task).then(function() {
+                                console.log('[Page Agent] User chose: Lanjut. Resuming: ' + pending.substring(0, 50));
+                                currentPa.execute(pending).then(function() {
                                     console.log('[Page Agent] Resume completed');
                                 }).catch(function(e) {
                                     console.log('[Page Agent] Resume failed: ' + (e.message || e));
@@ -254,7 +250,7 @@
 
                         // 5. Show resume dialog if there's a pending task
                         setTimeout(function() {
-                            showResumeDialog(pa);
+                            showResumeDialog();
                         }, 2000);
 
                         return true;
