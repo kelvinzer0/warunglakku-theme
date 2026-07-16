@@ -60,12 +60,17 @@
     <!-- === BADGE ON PRODUCT DETAIL PAGE === -->
     <template id="wl_toping_badge_detail"
               name="WL: Toping badge on product detail"
-              inherit_id="website_sale.product"
+              inherit_id="website_sale.shop_product_carousel"
               priority="99">
         <!--
             Inject badge inside #o-carousel-product (the image carousel
             on the product detail page). Position:absolute via CSS
             places it at top-left of the image.
+
+            NOTE: The carousel lives in template `website_sale.shop_product_carousel`,
+            NOT `website_sale.product` (the parent which t-calls this child
+            template). Trying to xpath #o-carousel-product from the parent
+            view fails because it's rendered in the child view's scope.
         -->
         <xpath expr="//div[@id='o-carousel-product']" position="inside">
             <t t-if="product.public_categ_ids and 6 in product.public_categ_ids.ids and product.list_price &lt; 5000">
