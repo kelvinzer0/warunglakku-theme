@@ -22,3 +22,6 @@ Thumbs.db
 # Odoo
 *.pyc
 *.pyo
+
+# WL fork backup files (keep .js, ignore .bak)
+*.bak

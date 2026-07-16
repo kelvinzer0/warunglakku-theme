@@ -3,8 +3,8 @@
     <template id="wl_page_agent" name="WL: Page Agent AI"
               inherit_id="website.layout" priority="99">
         <xpath expr="//body" position="inside">
-            <script src="https://cdn.jsdelivr.net/npm/page-agent@1.12.1/dist/iife/page-agent.demo.js"
-                    crossorigin="anonymous"></script>
+            <!-- WL fork of page-agent@1.12.1: autofocus on panel open removed for mobile UX -->
+            <script src="/warunglakku_theme/static/src/js/page-agent/page-agent.demo.js"></script>
             <script>
                 (function() {
                     var STORAGE_KEY = 'wl_page_agent_history';
@@ -16,41 +16,327 @@
                         var style = document.createElement('style');
                         style.id = 'wl-pa-style';
                         style.textContent = `
-[class*="_background_1tu05_"] {
-    background: linear-gradient(135deg, rgba(90,8,14,0.97), rgba(122,12,20,0.97)) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(90,8,14,0.3) !important;
+/* === WL Robot Icon (replace default paper-plane cursor) === */
+[class*="cursorBorder_1dgwb_"] {
+    background: none !important;
+    -webkit-mask: none !important;
+    mask: none !important;
+    display: none !important;
 }
-[class*="_historySectionWrapper_1tu05_"] { background: rgba(90,8,14,0.85) !important; }
-[class*="_header_1tu05_"] { background: rgba(90,8,14,0.6) !important; }
-[class*="_statusText_1tu05_"] { color: #f5c400 !important; font-weight: 600 !important; }
-[class*="_indicator_1tu05_"] { background: #f5c400 !important; }
-[class*="_inputSectionWrapper_1tu05_"] { background: rgba(253,251,245,0.95) !important; }
-[class*="_taskInput_1tu05_"] {
+[class*="cursorFilling_1dgwb_"] {
+    background: url("data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3e%3cdefs%3e%3clinearGradient%20id='wl-rob'%20x1='0%25'%20y1='0%25'%20x2='100%25'%20y2='100%25'%3e%3cstop%20offset='0%25'%20style='stop-color:%23f5c400'/%3e%3cstop%20offset='100%25'%20style='stop-color:%23e6b800'/%3e%3c/linearGradient%3e%3c/defs%3e%3cpath%20d='M50%208%20a4%204%200%201%201%200%208%20a4%204%200%201%201%200-8%20z'%20fill='%23f5c400'/%3e%3crect%20x='48'%20y='16'%20width='4'%20height='10'%20fill='%23f5c400'%20rx='2'/%3e%3crect%20x='20'%20y='28'%20width='60'%20height='46'%20rx='12'%20fill='url(%23wl-rob)'%20stroke='%235a080e'%20stroke-width='2'/%3e%3ccircle%20cx='36'%20cy='46'%20r='5'%20fill='%235a080e'/%3e%3ccircle%20cx='64'%20cy='46'%20r='5'%20fill='%235a080e'/%3e%3crect%20x='38'%20y='60'%20width='24'%20height='4'%20rx='2'%20fill='%235a080e'/%3e%3crect%20x='14'%20y='42'%20width='6'%20height='14'%20rx='3'%20fill='%23f5c400'%20stroke='%235a080e'%20stroke-width='1.5'/%3e%3crect%20x='80'%20y='42'%20width='6'%20height='14'%20rx='3'%20fill='%23f5c400'%20stroke='%235a080e'%20stroke-width='1.5'/%3e%3c/svg%3e") 0 0/100% 100% no-repeat !important;
+    transform: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    filter: none !important;
+}
+[class*="cursorRipple_1dgwb_"] {
+    display: none !important;
+}
+[class*="cursor_1dgwb_"] {
+    filter: none !important;
+}
+
+/* === Remove ALL shadows + blur backdrop === */
+[class*="background_1tu05_39"] {
+    /* blur backdrop layer — completely hide */
+    display: none !important;
+}
+[class*="doneSuccess_1tu05_366"] {
+    box-shadow: none !important;
+}
+[class*="doneError_1tu05_412"] {
+    box-shadow: none !important;
+}
+[class*="historySectionWrapper_1tu05_246"] {
+    box-shadow: none !important;
+}
+[class*="historySection_1tu05_246"] {
+    box-shadow: none !important;
+}
+
+/* === Panel background (main container) === */
+[class*="background_1tu05_"]:not([class*="background_1tu05_39"]) {
+    background: #5a080e !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(245,196,0,0.25) !important;
+}
+[class*="historySectionWrapper_1tu05_"] {
+    background: rgba(90,8,14,0.85) !important;
+    border: none !important;
+}
+[class*="header_1tu05_"] {
+    background: rgba(90,8,14,0.6) !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+[class*="statusText_1tu05_"] {
+    color: #f5c400 !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+}
+[class*="indicator_1tu05_"] {
+    background: #f5c400 !important;
+    box-shadow: none !important;
+}
+[class*="inputSectionWrapper_1tu05_"] {
+    background: rgba(253,251,245,0.95) !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-top: 1px solid rgba(90,8,14,0.1) !important;
+}
+[class*="taskInput_1tu05_"] {
     background: #fff !important; color: #1f1f1f !important;
     border: 1px solid #ddd !important; border-radius: 8px !important;
     font-size: 13px !important; padding: 8px 12px !important;
     font-family: Inter, -apple-system, sans-serif !important;
+    box-shadow: none !important;
 }
-[class*="_taskInput_1tu05_"]:focus {
+[class*="taskInput_1tu05_"]:focus {
     border-color: #5a080e !important;
     box-shadow: 0 0 0 2px rgba(90,8,14,0.1) !important;
     outline: none !important;
 }
-[class*="_controlButton_1tu05_"]:not([class*="_stopButton"]) {
+[class*="controlButton_1tu05_"]:not([class*="_stopButton"]) {
     background: rgba(245,196,0,0.15) !important;
     color: #f5c400 !important;
     border-radius: 6px !important;
+    box-shadow: none !important;
+    border: none !important;
 }
-[class*="_statusSection_1tu05_"] {
+[class*="statusSection_1tu05_"] {
     display: flex !important; align-items: center !important; gap: 6px !important;
 }
-[class*="_historySection_1tu05_"]::-webkit-scrollbar { width: 4px !important; }
-[class*="_historySection_1tu05_"]::-webkit-scrollbar-thumb {
+[class*="historySection_1tu05_"]::-webkit-scrollbar { width: 4px !important; }
+[class*="historySection_1tu05_"]::-webkit-scrollbar-thumb {
     background: rgba(245,196,0,0.3) !important; border-radius: 4px !important;
+}
+
+/* === Success / error message cards: keep color but no glow === */
+[class*="doneSuccess_1tu05_366"] {
+    background: linear-gradient(135deg, #22c55e1a, #22c55e0d) !important;
+    border-left: 4px solid #22c55e !important;
+}
+[class*="doneError_1tu05_412"] {
+    background: linear-gradient(135deg, #ef44441a, #ef44440d) !important;
+    border-left: 4px solid #ef4444 !important;
+}
+
+/* === WL Page Agent Toggle FAB === */
+#wl-pa-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2147483640;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5a080e, #7a0c14);
+    border: 2px solid #f5c400;
+    box-shadow: 0 4px 12px rgba(90,8,14,0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-family: Inter, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+#wl-pa-toggle:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(90,8,14,0.4);
+}
+#wl-pa-toggle:active {
+    transform: scale(0.95);
+}
+#wl-pa-toggle svg {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+#wl-pa-toggle .wl-pa-toggle-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    border: 2px solid #fff;
+    line-height: 1;
+}
+#wl-pa-toggle .wl-pa-toggle-badge.visible {
+    display: flex;
+}
+#wl-pa-toggle-tooltip {
+    position: fixed;
+    bottom: 32px;
+    right: 84px;
+    z-index: 2147483640;
+    background: #5a080e;
+    color: #f5c400;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: Inter, -apple-system, sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border: 1px solid rgba(245,196,0,0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+#wl-pa-toggle-tooltip.visible {
+    opacity: 1;
+}
+
+/* === Page Agent hidden state === */
+body.wl-pa-hidden [class*="wrapper_1tu05_"] {
+    display: none !important;
+}
+body.wl-pa-hidden [class*="cursor_1dgwb_"] {
+    display: none !important;
+}
+/* SimulatorMask: overlay used by agent when clicking — also hide */
+body.wl-pa-hidden [class*="SimulatorMask_module_"] {
+    display: none !important;
 }
                         `;
                         document.head.appendChild(style);
+                    }
+
+                    // === Toggle FAB: show/hide Page Agent ===
+                    var TOGGLE_KEY = 'wl_page_agent_visible';
+                    var paVisible = true; // default visible, will be overridden by storage
+
+                    function getRobotSVG() {
+                        // Mini robot icon for the FAB (yellow on transparent, no stroke border needed)
+                        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+                            '<path d="M50 8 a4 4 0 1 1 0 8 a4 4 0 1 1 0-8 z" fill="#f5c400"/>' +
+                            '<rect x="48" y="16" width="4" height="10" fill="#f5c400" rx="2"/>' +
+                            '<rect x="20" y="28" width="60" height="46" rx="12" fill="#f5c400" stroke="#5a080e" stroke-width="2"/>' +
+                            '<circle cx="36" cy="46" r="5" fill="#5a080e"/>' +
+                            '<circle cx="64" cy="46" r="5" fill="#5a080e"/>' +
+                            '<rect x="38" y="60" width="24" height="4" rx="2" fill="#5a080e"/>' +
+                            '<rect x="14" y="42" width="6" height="14" rx="3" fill="#f5c400" stroke="#5a080e" stroke-width="1.5"/>' +
+                            '<rect x="80" y="42" width="6" height="14" rx="3" fill="#f5c400" stroke="#5a080e" stroke-width="1.5"/>' +
+                            '</svg>';
+                    }
+
+                    function getCLOSE_SVG() {
+                        // X icon when agent is visible (click to hide)
+                        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f5c400" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<line x1="6" y1="6" x2="18" y2="18"/>' +
+                            '<line x1="18" y1="6" x2="6" y2="18"/>' +
+                            '</svg>';
+                    }
+
+                    function createToggleFAB() {
+                        if (document.getElementById('wl-pa-toggle')) return;
+
+                        var btn = document.createElement('button');
+                        btn.id = 'wl-pa-toggle';
+                        btn.type = 'button';
+                        btn.setAttribute('aria-label', 'Tampilkan/sembunyikan Page Agent');
+                        btn.innerHTML = getRobotSVG() + '<span class="wl-pa-toggle-badge" id="wl-pa-toggle-badge"></span>';
+
+                        var tooltip = document.createElement('div');
+                        tooltip.id = 'wl-pa-toggle-tooltip';
+                        tooltip.textContent = 'Buka AI Assistant';
+
+                        document.body.appendChild(btn);
+                        document.body.appendChild(tooltip);
+
+                        // Restore previous state from storage
+                        try {
+                            var saved = localStorage.getItem(TOGGLE_KEY);
+                            if (saved === 'false') {
+                                paVisible = false;
+                            } else {
+                                paVisible = true; // default visible
+                            }
+                        } catch(e) {
+                            paVisible = true;
+                        }
+                        applyVisibility(false); // apply without animation on first load
+
+                        // Hover tooltip (desktop)
+                        btn.addEventListener('mouseenter', function() {
+                            tooltip.classList.add('visible');
+                            updateTooltipText();
+                        });
+                        btn.addEventListener('mouseleave', function() {
+                            tooltip.classList.remove('visible');
+                        });
+
+                        // Click to toggle
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            paVisible = !paVisible;
+                            applyVisibility(true);
+                            try { localStorage.setItem(TOGGLE_KEY, paVisible ? 'true' : 'false'); } catch(e) {}
+                            console.log('[Page Agent] Toggle: ' + (paVisible ? 'visible' : 'hidden'));
+                            updateTooltipText();
+                            // Hide tooltip after click on mobile
+                            setTimeout(function() { tooltip.classList.remove('visible'); }, 1500);
+                        });
+                    }
+
+                    function updateTooltipText() {
+                        var tooltip = document.getElementById('wl-pa-toggle-tooltip');
+                        if (!tooltip) return;
+                        tooltip.textContent = paVisible ? 'Sembunyikan AI' : 'Buka AI Assistant';
+                    }
+
+                    function updateToggleIcon() {
+                        var btn = document.getElementById('wl-pa-toggle');
+                        if (!btn) return;
+                        // Show robot icon when hidden (suggests "open me")
+                        // Show X icon when visible (suggests "close me")
+                        var svgHolder = btn;
+                        // Preserve badge
+                        var badge = document.getElementById('wl-pa-toggle-badge');
+                        btn.innerHTML = (paVisible ? getCLOSE_SVG() : getRobotSVG()) +
+                            '<span class="wl-pa-toggle-badge' + (badge &amp;&amp; badge.classList.contains('visible') ? ' visible' : '') + '" id="wl-pa-toggle-badge">' + (badge ? badge.textContent : '') + '</span>';
+                    }
+
+                    function applyVisibility(animate) {
+                        if (paVisible) {
+                            document.body.classList.remove('wl-pa-hidden');
+                        } else {
+                            document.body.classList.add('wl-pa-hidden');
+                        }
+                        updateToggleIcon();
+                    }
+
+                    // Show notification badge when agent completes a task while hidden
+                    function showBadgeIfHidden() {
+                        if (!paVisible) {
+                            var badge = document.getElementById('wl-pa-toggle-badge');
+                            if (badge) {
+                                badge.classList.add('visible');
+                                badge.textContent = '!';
+                            }
+                        }
+                    }
+                    function clearBadge() {
+                        var badge = document.getElementById('wl-pa-toggle-badge');
+                        if (badge) {
+                            badge.classList.remove('visible');
+                            badge.textContent = '';
+                        }
                     }
 
                     // === Fix Chinese text → Indonesian ===
@@ -115,6 +401,10 @@
                                 savedTaskInstruction = '';
                                 try { sessionStorage.removeItem(PENDING_TASK_KEY); } catch(e) {}
                                 console.log('[Page Agent] Task ended (completed=' + isCompleted + '), cleared pending');
+                                // Show badge on FAB if user has hidden Page Agent
+                                if (isCompleted) {
+                                    showBadgeIfHidden();
+                                }
                             }
 
                             // Always save history
@@ -181,6 +471,13 @@
 
                         btnResume.onclick = function() {
                             overlay.remove();
+                            // Auto-show Page Agent if user had hidden it
+                            if (!paVisible) {
+                                paVisible = true;
+                                applyVisibility(true);
+                                try { localStorage.setItem(TOGGLE_KEY, 'true'); } catch(e) {}
+                                clearBadge();
+                            }
                             // 'pending' is captured in closure
                             setTimeout(function() {
                                 var currentPa = window.pageAgent;
@@ -381,6 +678,7 @@
                         attempts++;
                         injectCSS();
                         fixText();
+                        createToggleFAB(); // create FAB as soon as body is ready
                         if (window.pageAgent &amp;&amp; !window.pageAgent.disposed) {
                             if (!agentReady) {
                                 if (setupAgent()) {
@@ -399,6 +697,13 @@
                     if (document.body) {
                         observer.observe(document.body, { childList: true, subtree: true, characterData: true });
                     }
+
+                    // When user opens the panel via FAB, clear the notification badge
+                    document.addEventListener('click', function(e) {
+                        if (e.target &amp;&amp; e.target.closest &amp;&amp; e.target.closest('#wl-pa-toggle') &amp;&amp; paVisible) {
+                            clearBadge();
+                        }
+                    }, true);
                 })();
             </script>
         </xpath>
