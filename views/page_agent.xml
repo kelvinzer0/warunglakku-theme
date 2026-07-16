@@ -182,6 +182,13 @@
                         btnResume.onclick = function() {
                             overlay.remove();
                             // 'pending' is captured in closure — no need to re-read from sessionStorage
+                            // Save current history before execute() clears it
+                            var savedHistory = [];
+                            try {
+                                var stored = sessionStorage.getItem(STORAGE_KEY);
+                                if (stored) savedHistory = JSON.parse(stored) || [];
+                            } catch(e) {}
+
                             setTimeout(function() {
                                 var currentPa = window.pageAgent;
                                 if (!currentPa || currentPa.disposed) {
@@ -189,10 +196,36 @@
                                     return;
                                 }
                                 console.log('[Page Agent] User chose: Lanjut. Resuming: ' + pending.substring(0, 50));
+
+                                // Prepend context message so agent knows what happened before
+                                var contextPrefix = '';
+                                if (savedHistory.length > 0) {
+                                    contextPrefix = 'Sebelumnya saya sudah melakukan: ' +
+                                        savedHistory.filter(function(h) {
+                                            return h.type === 'output' || h.type === 'step';
+                                        }).map(function(h) {
+                                            return h.reflection ? (h.reflection.evaluation_previous_goal || '') : '';
+                                        }).filter(function(s) { return s.length > 5; }).join('; ');
+                                    if (contextPrefix.length > 5) {
+                                        contextPrefix = contextPrefix + '. Sekarang ';
+                                        pending = contextPrefix + pending.toLowerCase();
+                                    }
+                                }
+
                                 currentPa.execute(pending).then(function() {
                                     console.log('[Page Agent] Resume completed');
+                                    // Merge old history with new
+                                    try {
+                                        var newHistory = currentPa.history || [];
+                                        currentPa.history = savedHistory.concat(newHistory);
+                                        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(currentPa.history));
+                                    } catch(e) {}
                                 }).catch(function(e) {
                                     console.log('[Page Agent] Resume failed: ' + (e.message || e));
+                                    // Restore old history on failure
+                                    try {
+                                        currentPa.history = savedHistory;
+                                    } catch(e) {}
                                 });
                             }, 500);
                         };
