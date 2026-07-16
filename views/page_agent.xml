@@ -181,51 +181,74 @@
 
                         btnResume.onclick = function() {
                             overlay.remove();
-                            // 'pending' is captured in closure — no need to re-read from sessionStorage
-                            // Save current history before execute() clears it
-                            var savedHistory = [];
-                            try {
-                                var stored = sessionStorage.getItem(STORAGE_KEY);
-                                if (stored) savedHistory = JSON.parse(stored) || [];
-                            } catch(e) {}
-
+                            // 'pending' is captured in closure
                             setTimeout(function() {
                                 var currentPa = window.pageAgent;
                                 if (!currentPa || currentPa.disposed) {
-                                    console.log('[Page Agent] Agent not available, cannot resume');
+                                    console.log('[Page Agent] Agent not available');
                                     return;
                                 }
-                                console.log('[Page Agent] User chose: Lanjut. Resuming: ' + pending.substring(0, 50));
 
-                                // Prepend context message so agent knows what happened before
-                                var contextPrefix = '';
-                                if (savedHistory.length > 0) {
-                                    contextPrefix = 'Sebelumnya saya sudah melakukan: ' +
-                                        savedHistory.filter(function(h) {
-                                            return h.type === 'output' || h.type === 'step';
-                                        }).map(function(h) {
-                                            return h.reflection ? (h.reflection.evaluation_previous_goal || '') : '';
-                                        }).filter(function(s) { return s.length > 5; }).join('; ');
-                                    if (contextPrefix.length > 5) {
-                                        contextPrefix = contextPrefix + '. Sekarang ';
-                                        pending = contextPrefix + pending.toLowerCase();
+                                // Save old history before execute() clears it
+                                var oldHistory = [];
+                                try {
+                                    var stored = sessionStorage.getItem(STORAGE_KEY);
+                                    if (stored) oldHistory = JSON.parse(stored) || [];
+                                } catch(e) {}
+
+                                // Build context summary from old history
+                                var contextSummary = '';
+                                if (oldHistory.length > 0) {
+                                    var actions = oldHistory.map(function(h) {
+                                        if (h.reflection &amp;&amp; h.reflection.evaluation_previous_goal) {
+                                            return h.reflection.evaluation_previous_goal;
+                                        }
+                                        if (h.type === 'output' &amp;&amp; h.text) {
+                                            return h.text;
+                                        }
+                                        return '';
+                                    }).filter(function(s) { return s &amp;&amp; s.length > 10; });
+                                    if (actions.length > 0) {
+                                        contextSummary = 'Konteks sebelumnya: ' + actions.join('. ') + '. ';
                                     }
                                 }
 
-                                currentPa.execute(pending).then(function() {
-                                    console.log('[Page Agent] Resume completed');
-                                    // Merge old history with new
+                                var fullTask = contextSummary + pending;
+                                console.log('[Page Agent] Resuming with context: ' + fullTask.substring(0, 80));
+
+                                // Monkey-patch: temporarily override execute to preserve history
+                                var origExecute = currentPa.execute.bind(currentPa);
+                                currentPa.execute = async function(task) {
+                                    // Call original (which clears history internally)
+                                    var result = await origExecute(task);
+                                    // After completion, merge old history back
                                     try {
-                                        var newHistory = currentPa.history || [];
-                                        currentPa.history = savedHistory.concat(newHistory);
-                                        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(currentPa.history));
-                                    } catch(e) {}
+                                        var newHistory = this.history || [];
+                                        this.history = oldHistory.concat(newHistory);
+                                        // Trigger history change event so UI updates
+                                        this.dispatchEvent(new Event('historychange'));
+                                        // Save merged history
+                                        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
+                                    } catch(e) {
+                                        console.log('[Page Agent] History merge error: ' + e.message);
+                                    }
+                                    return result;
+                                };
+
+                                // Execute with context-enriched task
+                                currentPa.execute(fullTask).then(function() {
+                                    console.log('[Page Agent] Resume completed');
+                                    // Restore original execute
+                                    currentPa.execute = origExecute;
                                 }).catch(function(e) {
                                     console.log('[Page Agent] Resume failed: ' + (e.message || e));
-                                    // Restore old history on failure
+                                    // Restore history on failure
                                     try {
-                                        currentPa.history = savedHistory;
-                                    } catch(e) {}
+                                        currentPa.history = oldHistory;
+                                        currentPa.dispatchEvent(new Event('historychange'));
+                                    } catch(e2) {}
+                                    // Restore original execute
+                                    currentPa.execute = origExecute;
                                 });
                             }, 500);
                         };
