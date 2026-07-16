@@ -230,8 +230,10 @@
                             }
                         } catch(e) {}
 
-                        // 3. Start task monitor
-                        monitorTask(pa);
+                        // 3. Start task monitor (delayed to skip demo init _thinking_ state)
+                        setTimeout(function() {
+                            monitorTask(pa);
+                        }, 3000);
 
                         // 4. Save everything before page unload
                         window.addEventListener('beforeunload', function() {
