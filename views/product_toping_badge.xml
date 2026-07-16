@@ -3,23 +3,24 @@
     <!--
         Warung Lakku: "Toping" Badge
         ============================================================
-        Shows a "Toping" badge on Seblak products priced below 5000
-        in BOTH the product list (shop grid) AND the product detail page.
+        Shows a pill-shaped "Toping" badge on Seblak products priced
+        below 6000 in BOTH the product list (shop grid) AND the
+        product detail page.
 
         Rules for badge to appear:
           1. Product belongs to public category "Seblak" (id=6, parent_id=11)
-          2. Product.list_price &lt; 5000
+          2. Product.list_price &lt; 6000
 
         Why "Toping" badge:
-          - Seblak products with price &lt; 5000 are add-ons/toppings
+          - Seblak products with price &lt; 6000 are add-ons/toppings
             (kerupuk, bakso, sosis, dll) that customers add to their
-            main Seblak bowl (which is priced &gt;= 5000).
+            main Seblak bowl (which is priced &gt;= 6000).
           - Highlighting them as "Toping" helps customers quickly
             identify add-on items vs main dishes.
 
         Templates touched:
-          - website_sale.products_item  (product card in /shop grid)
-          - website_sale.product        (product detail page)
+          - website_sale.products_item       (product card in /shop grid)
+          - website_sale.shop_product_carousel (image carousel on detail page)
 
         Badge placement:
           - List: top-left corner of product image (position:absolute)
@@ -33,6 +34,7 @@
 
         Author: Kelvin Yuli Andrian
         Since:  v17.0.3.10.67
+        Updated: v17.0.3.10.68 (threshold 5000 → 6000)
     -->
 
     <!-- === BADGE ON PRODUCT CARD (shop listing) === -->
@@ -47,7 +49,7 @@
             The XPath matches the first div with class oe_product_image.
         -->
         <xpath expr="//div[hasclass('oe_product_image')]" position="inside">
-            <t t-if="product.public_categ_ids and 6 in product.public_categ_ids.ids and product.list_price &lt; 5000">
+            <t t-if="product.public_categ_ids and 6 in product.public_categ_ids.ids and product.list_price &lt; 6000">
                 <div class="wl_toping_badge wl_toping_badge_list"
                      aria-label="Toping"
                      title="Produk toping untuk seblak">
@@ -73,7 +75,7 @@
             view fails because it's rendered in the child view's scope.
         -->
         <xpath expr="//div[@id='o-carousel-product']" position="inside">
-            <t t-if="product.public_categ_ids and 6 in product.public_categ_ids.ids and product.list_price &lt; 5000">
+            <t t-if="product.public_categ_ids and 6 in product.public_categ_ids.ids and product.list_price &lt; 6000">
                 <div class="wl_toping_badge wl_toping_badge_detail"
                      aria-label="Toping"
                      title="Produk toping untuk seblak">
